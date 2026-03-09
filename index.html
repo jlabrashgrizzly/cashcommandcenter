@@ -2831,38 +2831,57 @@ function triggerJNSync() {
   setJNSyncStatus('Fetching invoices from JobNimbus...', 'var(--accent)');
   showSyncStatus('Syncing JobNimbus...', 'var(--accent)');
 
-  fetch(SHEETS_URL + '?action=jn_sync&t=' + Date.now())
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    jnSyncing = false;
-    btns.forEach(function(b) { b.innerHTML = '&#x21BB; Sync JobNimbus API'; b.style.opacity = '1'; });
+  // Step 1: Trigger the sync via no-cors (fire-and-forget)
+  // Apps Script will fetch from JN and save to Sheets server-side.
+  // We can't read the response due to CORS redirect, so we don't try.
+  fetch(SHEETS_URL + '?action=jn_sync&t=' + Date.now(), { mode: 'no-cors' })
+  .then(function() {
+    // Step 2: Wait a few seconds for Apps Script to finish, then reload from Sheets
+    setJNSyncStatus('Saving to Sheets... reloading in a moment...', 'var(--accent)');
+    setTimeout(function() {
+      // Reload all data from Sheets (which now has the fresh JN data)
+      fetch(SHEETS_URL + '?t=' + Date.now())
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        jnSyncing = false;
+        btns.forEach(function(b) { b.innerHTML = '&#x21BB; Sync JobNimbus API'; b.style.opacity = '1'; });
 
-    if (!data.ok) {
-      var errMsg = data.error || 'Unknown error';
-      setJNSyncStatus('Sync failed: ' + errMsg, 'var(--red)');
-      showSyncStatus('JN sync failed: ' + errMsg, 'var(--red)');
-      return;
-    }
+        if (!data.ok) {
+          setJNSyncStatus('Reload failed: ' + (data.error || 'Unknown'), 'var(--red)');
+          showSyncStatus('Sync reload failed', 'var(--red)');
+          return;
+        }
 
-    // Replace arInvoices with synced data
-    var synced = data.invoices || [];
-    arInvoices.length = 0;
-    synced.forEach(function(inv) { arInvoices.push(inv); });
+        // Apply the fresh AR data from Sheets
+        var fullAR = data.fullAR || [];
+        if (fullAR.length) {
+          arInvoices.length = 0;
+          fullAR.forEach(function(inv) { arInvoices.push(inv); });
 
-    // Re-render affected pages
-    renderAR();
-    renderDashboard();
-    renderConcentration();
-    updateARBadge();
+          renderAR();
+          renderDashboard();
+          renderConcentration();
+          updateARBadge();
 
-    var msg = 'Synced ' + data.mappedCount + ' invoices from JobNimbus (' + data.rawCount + ' total)';
-    setJNSyncStatus(msg, 'var(--green)');
-    showSyncStatus(msg, 'var(--green)');
+          var msg = 'Synced ' + fullAR.length + ' invoices from JobNimbus';
+          setJNSyncStatus(msg, 'var(--green)');
+          showSyncStatus(msg, 'var(--green)');
+        } else {
+          setJNSyncStatus('Sync may still be processing — try again in 10s', 'var(--amber)');
+          showSyncStatus('No new AR data yet — retry shortly', 'var(--amber)');
+        }
+      })
+      .catch(function(err) {
+        jnSyncing = false;
+        btns.forEach(function(b) { b.innerHTML = '&#x21BB; Sync JobNimbus API'; b.style.opacity = '1'; });
+        setJNSyncStatus('Reload error: ' + err.message, 'var(--red)');
+      });
+    }, 12000); // 12 second delay to let Apps Script finish the JN fetch
   })
   .catch(function(err) {
     jnSyncing = false;
     btns.forEach(function(b) { b.innerHTML = '&#x21BB; Sync JobNimbus API'; b.style.opacity = '1'; });
-    setJNSyncStatus('Sync error: ' + err.message, 'var(--red)');
+    setJNSyncStatus('Sync trigger error: ' + err.message, 'var(--red)');
     showSyncStatus('JN sync failed', 'var(--red)');
   });
 }
