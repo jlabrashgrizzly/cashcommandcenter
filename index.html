@@ -2190,14 +2190,58 @@ function renderAR() {
     </div>`;
   }
 
+  // Compute real average days outstanding
+  var totalDaysOut = arInvoices.reduce(function(s, i) {
+    var dueD = new Date(i.due);
+    var days = Math.max(0, Math.round((TODAY - dueD) / 86400000));
+    return s + days;
+  }, 0);
+  var avgDays = arInvoices.length > 0 ? Math.round(totalDaysOut / arInvoices.length) : 0;
+
+  // Build all-invoices summary table
+  var allSorted = arInvoices.slice().sort(function(a,b) {
+    var order = {'60+':0,'31-60':1,'1-30':2,'current':3};
+    var bo = (order[a.bucket]||9) - (order[b.bucket]||9);
+    if (bo !== 0) return bo;
+    return b.amt - a.amt;
+  });
+  var allRows = allSorted.map(function(inv) {
+    var daysOver = Math.round((TODAY - new Date(inv.due)) / 86400000);
+    var daysStr  = daysOver > 0 ? daysOver + 'd overdue' : daysOver === 0 ? 'Due today' : Math.abs(daysOver) + 'd until due';
+    var bucketColors = {'current':'var(--green)','1-30':'var(--amber)','31-60':'var(--red)','60+':'#FF2D55'};
+    var bucketLabels = {'current':'CURRENT','1-30':'1-30d','31-60':'31-60d','60+':'60+d'};
+    var bc = bucketColors[inv.bucket] || 'var(--white-faint)';
+    var bl = bucketLabels[inv.bucket] || inv.bucket;
+    return '<tr>'
+      +'<td class="b" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+inv.client+'</td>'
+      +'<td class="m">'+inv.id+'</td>'
+      +'<td class="m" style="color:'+bc+'">'+fmt(inv.amt)+'</td>'
+      +'<td class="m">'+inv.due+'</td>'
+      +'<td class="m" style="color:'+(daysOver>0?bc:'var(--white-faint)')+'">'+daysStr+'</td>'
+      +'<td><span class="pill" style="background:'+bc+'22;color:'+bc+';border:1px solid '+bc+'44">'+bl+'</span></td>'
+      +'<td><button onclick="openAREdit(\''+inv.id+'\')" style="background:var(--navy-4);border:1px solid var(--border);color:var(--white-faint);padding:3px 8px;border-radius:4px;font-size:9px;font-family:\'DM Mono\',monospace;cursor:pointer">✎</button></td>'
+    +'</tr>';
+  }).join('');
+
+  var allInvoicesTable = '<div class="card mb16">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+      +'<div class="sec" style="margin-bottom:0">All Open Invoices ('+arInvoices.length+')</div>'
+      +'<div style="font-size:9px;font-family:\'DM Mono\',monospace;color:var(--white-faint)">Sorted by aging · click ✎ to edit expected date</div>'
+    +'</div>'
+    +'<div style="max-height:400px;overflow-y:auto">'
+    +'<table><thead><tr><th>Client</th><th>Invoice</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Bucket</th><th></th></tr></thead>'
+    +'<tbody>'+allRows+'</tbody></table>'
+    +'</div></div>';
+
   el.innerHTML =
     (a60p.length ? `<div class="alert r mb16"><div class="alert-icon">&#128680;</div><div><div class="alert-title">${a60p.length} invoices 60+ days past due &mdash; ${fmt(crit)} at collection risk</div><div class="alert-body">Immediate escalation required. Use the &#9998; Edit button on each invoice to set expected payment dates and update collection status.</div></div></div>` : '') +
     `<div class="g4 mb16">
       <div class="card-sm"><div class="kl">Total AR Outstanding</div><div class="kv green">${fmt(total)}</div><div class="ks">${arInvoices.length} open invoices</div></div>
       <div class="card-sm"><div class="kl">Past Due Total</div><div class="kv red">${fmt(past)}</div><div class="ks">${arInvoices.filter(i=>i.bucket!=='current').length} invoices overdue</div></div>
       <div class="card-sm"><div class="kl">60+ Day Risk</div><div class="kv red">${fmt(crit)}</div><div class="ks">${a60p.length} invoices &mdash; escalate</div></div>
-      <div class="card-sm"><div class="kl">Avg Days Outstanding</div><div class="kv amber">38d</div><div class="ks">Target: under 30 days</div></div>
+      <div class="card-sm"><div class="kl">Avg Days Outstanding</div><div class="kv amber">${avgDays}d</div><div class="ks">Target: under 30 days</div></div>
     </div>` +
+    allInvoicesTable +
     forecastCard +
     `<div class="g2 mb16" style="align-items:start">
       <div class="card">
@@ -2236,7 +2280,7 @@ function renderDashboard() {
   var totalPayable = activeBills.reduce(function(s,b){ return s+b.amt; }, 0);
 
   var totalAR      = arInvoices.reduce(function(s,i){ return s+i.amt; }, 0);
-  var overdueAR    = arInvoices.filter(function(i){ return i.bucket==='over30'||i.bucket==='over60'; });
+  var overdueAR    = arInvoices.filter(function(i){ return i.bucket==='1-30'||i.bucket==='31-60'||i.bucket==='60+'; });
   var overdueAmt   = overdueAR.reduce(function(s,i){ return s+i.amt; }, 0);
   var overdueCount = overdueAR.length;
 
