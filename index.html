@@ -2057,6 +2057,8 @@ function saveAREdit() {
   closeAREdit();
   renderAR();
   saveAROverride(savedId);
+  // Also save the full AR array so expected dates survive JN re-syncs
+  saveFullAR();
 }
 
 function clearExpectedDate() {
@@ -2212,11 +2214,16 @@ function renderAR() {
     var bucketLabels = {'current':'CURRENT','1-30':'1-30d','31-60':'31-60d','60+':'60+d'};
     var bc = bucketColors[inv.bucket] || 'var(--white-faint)';
     var bl = bucketLabels[inv.bucket] || inv.bucket;
+    // Expected date display
+    var expCell = inv.expectedDate
+      ? '<td class="m" style="font-size:13px;color:var(--green);font-weight:600">'+inv.expectedDate+'</td>'
+      : '<td class="m" style="font-size:12px;color:var(--white-faint);font-style:italic">— not set</td>';
     return '<tr>'
       +'<td class="b" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px">'+inv.client+'</td>'
       +'<td class="m" style="font-size:13px">'+inv.id+'</td>'
       +'<td class="m" style="color:'+bc+';font-size:15px;font-weight:700">'+fmt(inv.amt)+'</td>'
       +'<td class="m" style="font-size:13px">'+inv.due+'</td>'
+      +expCell
       +'<td class="m" style="color:'+(daysOver>0?bc:'var(--white-faint)')+';font-size:13px;font-weight:600">'+daysStr+'</td>'
       +'<td><span class="pill" style="background:'+bc+'22;color:'+bc+';border:1px solid '+bc+'44;font-size:11px">'+bl+'</span></td>'
       +'<td><button onclick="openAREdit(\''+inv.id+'\')" style="background:var(--navy-4);border:1px solid var(--border);color:var(--white-faint);padding:5px 10px;border-radius:4px;font-size:11px;font-family:\'DM Mono\',monospace;cursor:pointer">✎ Edit</button></td>'
@@ -2229,7 +2236,7 @@ function renderAR() {
       +'<div style="font-size:11px;font-family:\'DM Mono\',monospace;color:var(--white-faint)">Sorted by aging · click ✎ Edit to set expected date</div>'
     +'</div>'
     +'<div style="max-height:500px;overflow-y:auto">'
-    +'<table><thead><tr><th>Client</th><th>Invoice</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Bucket</th><th></th></tr></thead>'
+    +'<table><thead><tr><th>Client</th><th>Invoice</th><th>Amount</th><th>Due Date</th><th>Expected</th><th>Status</th><th>Bucket</th><th></th></tr></thead>'
     +'<tbody>'+allRows+'</tbody></table>'
     +'</div></div>';
 
