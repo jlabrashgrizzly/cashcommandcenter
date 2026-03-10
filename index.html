@@ -2066,6 +2066,68 @@ function clearExpectedDate() {
 }
 
 // ── RENDER ────────────────────────────────────────────────────────
+// ── AR TABLE SORT — global so onclick handlers can reach them ────────────────
+function buildARRows() {
+  var bucketOrder = {'60+':0,'31-60':1,'1-30':2,'current':3};
+  var sorted = arInvoices.slice().sort(function(a,b) {
+    var v = 0;
+    if      (arSortCol === 'client')   v = a.client.localeCompare(b.client);
+    else if (arSortCol === 'id')       v = (a.id||'').localeCompare(b.id||'');
+    else if (arSortCol === 'invdate')  v = (a.inv||'') < (b.inv||'') ? -1 : (a.inv||'') > (b.inv||'') ? 1 : 0;
+    else if (arSortCol === 'amt')      v = a.amt - b.amt;
+    else if (arSortCol === 'due')      v = (a.due||'') < (b.due||'') ? -1 : (a.due||'') > (b.due||'') ? 1 : 0;
+    else if (arSortCol === 'expected') v = (a.expectedDate||'9999') < (b.expectedDate||'9999') ? -1 : (a.expectedDate||'9999') > (b.expectedDate||'9999') ? 1 : 0;
+    else if (arSortCol === 'bucket')   { v = (bucketOrder[a.bucket]||9) - (bucketOrder[b.bucket]||9); if (v===0) v = b.amt - a.amt; }
+    return v * arSortDir;
+  });
+  var bucketColors = {'current':'var(--green)','1-30':'var(--amber)','31-60':'var(--red)','60+':'#FF2D55'};
+  var bucketLabels = {'current':'CURRENT','1-30':'1-30d','31-60':'31-60d','60+':'60+d'};
+  return sorted.map(function(inv) {
+    var daysOver = Math.round((TODAY - new Date(inv.due)) / 86400000);
+    var daysStr  = daysOver > 0 ? daysOver+'d overdue' : daysOver === 0 ? 'Due today' : Math.abs(daysOver)+'d until due';
+    var bc = bucketColors[inv.bucket] || 'var(--white-faint)';
+    var bl = bucketLabels[inv.bucket] || inv.bucket;
+    var age = Math.round((TODAY - new Date(inv.inv)) / 86400000);
+    var invDateCol = age > 60 ? 'var(--red)' : age > 30 ? 'var(--amber)' : 'var(--green)';
+    var expCell = inv.expectedDate
+      ? '<td class="m" style="font-size:13px;color:var(--green);font-weight:600">'+inv.expectedDate+'</td>'
+      : '<td class="m" style="font-size:12px;color:var(--white-faint);font-style:italic">— not set</td>';
+    return '<tr>'
+      +'<td class="b" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px">'+inv.client+'</td>'
+      +'<td class="m" style="font-size:12px">'+inv.id+'</td>'
+      +'<td class="m" style="font-size:12px;font-family:'DM Mono',monospace;color:'+invDateCol+'">'+inv.inv+'</td>'
+      +'<td class="m" style="color:'+bc+';font-size:15px;font-weight:700">'+fmt(inv.amt)+'</td>'
+      +'<td class="m" style="font-size:13px">'+inv.due+'</td>'
+      +expCell
+      +'<td class="m" style="color:'+(daysOver>0?bc:'var(--white-faint)')+';font-size:13px;font-weight:600">'+daysStr+'</td>'
+      +'<td><span class="pill" style="background:'+bc+'22;color:'+bc+';border:1px solid '+bc+'44;font-size:11px">'+bl+'</span></td>'
+      +'<td><button onclick="openAREdit(''+inv.id+'')" style="background:var(--navy-4);border:1px solid var(--border);color:var(--white-faint);padding:5px 10px;border-radius:4px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer">✎ Edit</button></td>'
+    +'</tr>';
+  }).join('');
+}
+
+function sortARBy(col) {
+  arSortDir = (arSortCol === col) ? arSortDir * -1 : 1;
+  arSortCol = col;
+  var tbody = document.getElementById('ar-table-body');
+  if (tbody) tbody.innerHTML = buildARRows();
+  ['client','id','invdate','amt','due','expected','bucket'].forEach(function(c) {
+    var th = document.getElementById('ar-th-'+c);
+    if (!th) return;
+    th.querySelector('.ar-sort-arrow').textContent = arSortCol===c ? (arSortDir===1 ? ' ▲' : ' ▼') : ' ⇅';
+    th.style.color = arSortCol===c ? 'var(--accent)' : '';
+  });
+}
+
+function arTh(col, label) {
+  var active = arSortCol === col;
+  var arrow  = active ? (arSortDir===1 ? ' ▲' : ' ▼') : ' ⇅';
+  return '<th id="ar-th-'+col+'" onclick="sortARBy(''+col+'')" '
+    +'style="position:sticky;top:0;background:var(--navy-2);cursor:pointer;user-select:none;white-space:nowrap;z-index:2;'
+    +(active?'color:var(--accent);':'')+'">'
+    +label+'<span class="ar-sort-arrow" style="font-size:9px;opacity:0.6">'+arrow+'</span></th>';
+}
+
 function renderAR() {
   const el = document.getElementById('ar-content');
   if (!el) return;
@@ -2200,72 +2262,11 @@ function renderAR() {
   }, 0);
   var avgDays = arInvoices.length > 0 ? Math.round(totalDaysOut / arInvoices.length) : 0;
 
-  // Build all-invoices summary table — sortable columns, sticky header
-  function buildARRows() {
-    var bucketOrder = {'60+':0,'31-60':1,'1-30':2,'current':3};
-    var sorted = arInvoices.slice().sort(function(a,b) {
-      var v = 0;
-      if      (arSortCol === 'client')   v = a.client.localeCompare(b.client);
-      else if (arSortCol === 'id')       v = (a.id||'').localeCompare(b.id||'');
-      else if (arSortCol === 'invdate')  v = (a.inv||'') < (b.inv||'') ? -1 : (a.inv||'') > (b.inv||'') ? 1 : 0;
-      else if (arSortCol === 'amt')      v = a.amt - b.amt;
-      else if (arSortCol === 'due')      v = (a.due||'') < (b.due||'') ? -1 : (a.due||'') > (b.due||'') ? 1 : 0;
-      else if (arSortCol === 'expected') v = (a.expectedDate||'9999') < (b.expectedDate||'9999') ? -1 : (a.expectedDate||'9999') > (b.expectedDate||'9999') ? 1 : 0;
-      else if (arSortCol === 'bucket')   { v = (bucketOrder[a.bucket]||9) - (bucketOrder[b.bucket]||9); if (v===0) v = b.amt - a.amt; }
-      return v * arSortDir;
-    });
-    var bucketColors = {'current':'var(--green)','1-30':'var(--amber)','31-60':'var(--red)','60+':'#FF2D55'};
-    var bucketLabels = {'current':'CURRENT','1-30':'1-30d','31-60':'31-60d','60+':'60+d'};
-    return sorted.map(function(inv) {
-      var daysOver = Math.round((TODAY - new Date(inv.due)) / 86400000);
-      var daysStr  = daysOver > 0 ? daysOver+'d overdue' : daysOver === 0 ? 'Due today' : Math.abs(daysOver)+'d until due';
-      var bc = bucketColors[inv.bucket] || 'var(--white-faint)';
-      var bl = bucketLabels[inv.bucket] || inv.bucket;
-      var age = Math.round((TODAY - new Date(inv.inv)) / 86400000);
-      var invDateCol = age > 60 ? 'var(--red)' : age > 30 ? 'var(--amber)' : 'var(--green)';
-      var expCell = inv.expectedDate
-        ? '<td class="m" style="font-size:13px;color:var(--green);font-weight:600">'+inv.expectedDate+'</td>'
-        : '<td class="m" style="font-size:12px;color:var(--white-faint);font-style:italic">— not set</td>';
-      return '<tr>'
-        +'<td class="b" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px">'+inv.client+'</td>'
-        +'<td class="m" style="font-size:12px">'+inv.id+'</td>'
-        +'<td class="m" style="font-size:12px;font-family:\'DM Mono\',monospace;color:'+invDateCol+'">'+inv.inv+'</td>'
-        +'<td class="m" style="color:'+bc+';font-size:15px;font-weight:700">'+fmt(inv.amt)+'</td>'
-        +'<td class="m" style="font-size:13px">'+inv.due+'</td>'
-        +expCell
-        +'<td class="m" style="color:'+(daysOver>0?bc:'var(--white-faint)')+';font-size:13px;font-weight:600">'+daysStr+'</td>'
-        +'<td><span class="pill" style="background:'+bc+'22;color:'+bc+';border:1px solid '+bc+'44;font-size:11px">'+bl+'</span></td>'
-        +'<td><button onclick="openAREdit(\''+inv.id+'\')" style="background:var(--navy-4);border:1px solid var(--border);color:var(--white-faint);padding:5px 10px;border-radius:4px;font-size:11px;font-family:\'DM Mono\',monospace;cursor:pointer">✎ Edit</button></td>'
-      +'</tr>';
-    }).join('');
-  }
-
-  function sortARBy(col) {
-    arSortDir = (arSortCol === col) ? arSortDir * -1 : 1;
-    arSortCol = col;
-    var tbody = document.getElementById('ar-table-body');
-    if (tbody) tbody.innerHTML = buildARRows();
-    ['client','id','invdate','amt','due','expected','bucket'].forEach(function(c) {
-      var th = document.getElementById('ar-th-'+c);
-      if (!th) return;
-      th.querySelector('.ar-sort-arrow').textContent = arSortCol===c ? (arSortDir===1?' ▲':' ▼') : ' ⇅';
-      th.style.color = arSortCol===c ? 'var(--accent)' : '';
-    });
-  }
-
-  function arTh(col, label) {
-    var active = arSortCol === col;
-    var arrow  = active ? (arSortDir===1 ? ' ▲' : ' ▼') : ' ⇅';
-    return '<th id="ar-th-'+col+'" onclick="sortARBy(\''+col+'\')" '
-      +'style="position:sticky;top:0;background:var(--navy-2);cursor:pointer;user-select:none;white-space:nowrap;z-index:2;'
-      +(active?'color:var(--accent);':'')+'">'
-      +label+'<span class="ar-sort-arrow" style="font-size:9px;opacity:0.6">'+arrow+'</span></th>';
-  }
-
+  // All-invoices table — uses global buildARRows() + sortARBy() + arTh()
   var allInvoicesTable = '<div class="card mb16">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
       +'<div class="sec" style="margin-bottom:0;font-size:13px">All Open Invoices ('+arInvoices.length+')</div>'
-      +'<div style="font-size:11px;font-family:\'DM Mono\',monospace;color:var(--white-faint)">Click any column header to sort &middot; click again to reverse</div>'
+      +'<div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--white-faint)">Click any column header to sort &middot; click again to reverse</div>'
     +'</div>'
     +'<div style="max-height:500px;overflow-y:auto">'
     +'<table style="border-collapse:collapse;width:100%"><thead><tr>'
@@ -2889,8 +2890,8 @@ function saveFullAR() {
 
 var jnConfigured = false;  // set to true when Apps Script reports JN key is present
 var jnSyncing    = false;
-var arSortCol    = 'bucket';  // default sort column
-var arSortDir    = 1;         // 1 = asc, -1 = desc
+var arSortCol    = 'bucket';
+var arSortDir    = 1;
 
 function showJNSyncButtons() {
   // Show/hide sync buttons based on whether JN API is configured in Apps Script
