@@ -2006,6 +2006,32 @@ const PAY_PATTERNS = {
   'disputed': 'In dispute / uncertain',
 };
 
+// Recompute aging bucket from due date vs today.
+// Single source of truth — call this any time arInvoices is populated.
+function recomputeBucket(inv) {
+  if (!inv.due) return;
+  var days = Math.round((TODAY - new Date(inv.due)) / 86400000);
+  if      (days > 60) inv.bucket = '60+';
+  else if (days > 30) inv.bucket = '31-60';
+  else if (days > 0)  inv.bucket = '1-30';
+  else                inv.bucket = 'current';
+}
+
+// Returns age of invoice in days (days since invoice date, not due date).
+// Used for invoice date color coding: 0-30 = green, 31-60 = orange, 60+ = red.
+function invAgeDays(inv) {
+  if (!inv.inv) return 0;
+  return Math.round((TODAY - new Date(inv.inv)) / 86400000);
+}
+
+// Returns color for invoice date based on how old the invoice is.
+function invAgeColor(inv) {
+  var age = invAgeDays(inv);
+  if (age > 60) return 'var(--red)';
+  if (age > 30) return 'var(--amber)';
+  return 'var(--green)';
+}
+
 function arDaysOver(inv) {
   const ref = inv.expectedDate || inv.due;
   return Math.round((TODAY - new Date(ref)) / 86400000);
@@ -2160,7 +2186,7 @@ function renderAR() {
       </div>
       ${dateBlock}
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
-        <div><div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">INVOICE DATE</div><div style="font-size:11px;font-family:'DM Mono',monospace;margin-top:2px">${inv.inv}</div></div>
+        <div><div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">INVOICE DATE</div><div style="font-size:11px;font-family:'DM Mono',monospace;margin-top:2px;color:${invAgeColor(inv)}">${inv.inv}</div></div>
         <div><div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">CONTACT</div><div style="font-size:11px;margin-top:2px">${inv.contact}</div></div>
         <div><div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">ACTION</div><div style="font-size:10px;font-weight:700;font-family:'DM Mono',monospace;color:${col};margin-top:2px">${action}</div></div>
       </div>
@@ -2221,6 +2247,7 @@ function renderAR() {
     return '<tr>'
       +'<td class="b" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px">'+inv.client+'</td>'
       +'<td class="m" style="font-size:13px">'+inv.id+'</td>'
+      +'<td class="m" style="font-size:12px;font-family:\'DM Mono\',monospace;color:'+(function(i){var a=Math.round((TODAY-new Date(i.inv))/86400000);return a>60?'var(--red)':a>30?'var(--amber)':'var(--green)';})(inv)+'">'+(inv.inv||'')+'</td>'
       +'<td class="m" style="color:'+bc+';font-size:15px;font-weight:700">'+fmt(inv.amt)+'</td>'
       +'<td class="m" style="font-size:13px">'+inv.due+'</td>'
       +expCell
@@ -2236,7 +2263,7 @@ function renderAR() {
       +'<div style="font-size:11px;font-family:\'DM Mono\',monospace;color:var(--white-faint)">Sorted by aging · click ✎ Edit to set expected date</div>'
     +'</div>'
     +'<div style="max-height:500px;overflow-y:auto">'
-    +'<table><thead><tr><th>Client</th><th>Invoice</th><th>Amount</th><th>Due Date</th><th>Expected</th><th>Status</th><th>Bucket</th><th></th></tr></thead>'
+    +'<table><thead><tr><th>Client</th><th>Invoice</th><th>Inv Date</th><th>Amount</th><th>Due Date</th><th>Expected</th><th>Status</th><th>Bucket</th><th></th></tr></thead>'
     +'<tbody>'+allRows+'</tbody></table>'
     +'</div></div>';
 
@@ -2351,7 +2378,7 @@ function renderDashboard() {
   overdueAR.slice().sort(function(a,b){ return b.amt-a.amt; })
     .slice(0,2).forEach(function(inv){
       actions.push({ level:'r', cat:'RECEIVABLE',
-        txt: inv.client+' — '+inv.bucket.replace('over','')+'+ days overdue',
+        txt: inv.client+' — '+inv.bucket+'+ days overdue',
         val: fmt(inv.amt), page:'AR Aging' });
     });
 
@@ -2740,7 +2767,7 @@ function loadFromSheets() {
       var fullAR = data.fullAR || [];
       if (fullAR.length) {
         arInvoices.length = 0;
-        fullAR.forEach(function(inv){ arInvoices.push(inv); });
+        fullAR.forEach(function(inv){ recomputeBucket(inv); arInvoices.push(inv); });
       } else {
         var ar = data.arOverrides || {};
         arInvoices.forEach(function(inv) {
@@ -2927,7 +2954,7 @@ function triggerJNSync() {
         var fullAR = data.fullAR || [];
         if (fullAR.length) {
           arInvoices.length = 0;
-          fullAR.forEach(function(inv) { arInvoices.push(inv); });
+          fullAR.forEach(function(inv) { recomputeBucket(inv); arInvoices.push(inv); });
 
           renderAR();
           renderDashboard();
@@ -3870,15 +3897,8 @@ function importJobNimbus(csvText) {
     var dueDateRaw = r['date due'] || r['Date Due'] || '';
     var dueDate    = dueDateRaw ? parseJNDate(dueDateRaw) : addDays(invDate, 30);
 
-    // Determine aging bucket
-    var bucket = 'current';
-    if (dueDate) {
-      var due  = new Date(dueDate);
-      var now  = TODAY;
-      var days = Math.round((now - due) / 86400000);
-      if (days > 60)     bucket = 'over60';
-      else if (days > 0) bucket = 'over30';
-    }
+    // Determine aging bucket — use recomputeBucket after object creation
+    var bucket = 'current'; // placeholder; recomputeBucket() sets the real value below
 
     // Detect partial payment
     var isPartial = totalPaid > 0 && totalPaid < total;
@@ -3905,7 +3925,7 @@ function importJobNimbus(csvText) {
   }
 
   arInvoices.length = 0;
-  mapped.forEach(function(inv){ arInvoices.push(inv); });
+  mapped.forEach(function(inv){ recomputeBucket(inv); arInvoices.push(inv); });
   saveFullAR();
   renderAR();
   renderDashboard();
