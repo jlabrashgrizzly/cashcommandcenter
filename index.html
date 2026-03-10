@@ -1330,6 +1330,7 @@ function updateScenarioHints(){
     vendor:{a:'Payment amount ($)',b:'',hint:'Accelerating a vendor payment improves supplier relationship and may unblock materials.'},
   };
   const h=hints[type];
+  if (!h) return;
   document.getElementById('si-a-label').textContent=h.a;
   const wkLblEl=document.getElementById('si-week-label');
   if(wkLblEl) wkLblEl.textContent=(type==='projectslip'?'Week Originally Expected':'Which Week Does It Hit?');
@@ -1469,8 +1470,7 @@ function runScenario(){
   document.getElementById('scenario-results').innerHTML=resHTML;
 }
 
-// init
-updateScenarioHints();
+// init — called inside DOMContentLoaded below so DOM exists
 
 // ── CFO AI CHAT ──────────────────────────────────────────────────
 let chatOpen=false, apiKey='', chatHistory=[], isThinking=false;
@@ -2066,68 +2066,6 @@ function clearExpectedDate() {
 }
 
 // ── RENDER ────────────────────────────────────────────────────────
-// ── AR TABLE SORT — global scope so onclick handlers can reach them ──────────
-function buildARRows() {
-  var bucketOrder = {'60+':0,'31-60':1,'1-30':2,'current':3};
-  var sorted = arInvoices.slice().sort(function(a,b) {
-    var v = 0;
-    if      (arSortCol === 'client')   v = a.client.localeCompare(b.client);
-    else if (arSortCol === 'id')       v = (a.id||'').localeCompare(b.id||'');
-    else if (arSortCol === 'invdate')  v = (a.inv||'') < (b.inv||'') ? -1 : (a.inv||'') > (b.inv||'') ? 1 : 0;
-    else if (arSortCol === 'amt')      v = a.amt - b.amt;
-    else if (arSortCol === 'due')      v = (a.due||'') < (b.due||'') ? -1 : (a.due||'') > (b.due||'') ? 1 : 0;
-    else if (arSortCol === 'expected') v = (a.expectedDate||'9999') < (b.expectedDate||'9999') ? -1 : (a.expectedDate||'9999') > (b.expectedDate||'9999') ? 1 : 0;
-    else if (arSortCol === 'bucket')   { v = (bucketOrder[a.bucket]||9) - (bucketOrder[b.bucket]||9); if (v===0) v = b.amt - a.amt; }
-    return v * arSortDir;
-  });
-  var bucketColors = {'current':'var(--green)','1-30':'var(--amber)','31-60':'var(--red)','60+':'#FF2D55'};
-  var bucketLabels = {'current':'CURRENT','1-30':'1-30d','31-60':'31-60d','60+':'60+d'};
-  return sorted.map(function(inv) {
-    var daysOver = Math.round((TODAY - new Date(inv.due)) / 86400000);
-    var daysStr  = daysOver > 0 ? daysOver+'d overdue' : daysOver === 0 ? 'Due today' : Math.abs(daysOver)+'d until due';
-    var bc = bucketColors[inv.bucket] || 'var(--white-faint)';
-    var bl = bucketLabels[inv.bucket] || inv.bucket;
-    var age = Math.round((TODAY - new Date(inv.inv)) / 86400000);
-    var invDateCol = age > 60 ? 'var(--red)' : age > 30 ? 'var(--amber)' : 'var(--green)';
-    var expCell = inv.expectedDate
-      ? '<td class="m" style="font-size:13px;color:var(--green);font-weight:600">'+inv.expectedDate+'</td>'
-      : '<td class="m" style="font-size:12px;color:var(--white-faint);font-style:italic">— not set</td>';
-    return '<tr>'
-      +'<td class="b" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px">'+inv.client+'</td>'
-      +'<td class="m" style="font-size:12px">'+inv.id+'</td>'
-      +'<td class="m" style="font-size:12px;font-family:'DM Mono',monospace;color:'+invDateCol+'">'+inv.inv+'</td>'
-      +'<td class="m" style="color:'+bc+';font-size:15px;font-weight:700">'+fmt(inv.amt)+'</td>'
-      +'<td class="m" style="font-size:13px">'+inv.due+'</td>'
-      +expCell
-      +'<td class="m" style="color:'+(daysOver>0?bc:'var(--white-faint)')+';font-size:13px;font-weight:600">'+daysStr+'</td>'
-      +'<td><span class="pill" style="background:'+bc+'22;color:'+bc+';border:1px solid '+bc+'44;font-size:11px">'+bl+'</span></td>'
-      +'<td><button onclick="openAREdit(''+inv.id+'')" style="background:var(--navy-4);border:1px solid var(--border);color:var(--white-faint);padding:5px 10px;border-radius:4px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer">✎ Edit</button></td>'
-    +'</tr>';
-  }).join('');
-}
-
-function sortARBy(col) {
-  arSortDir = (arSortCol === col) ? arSortDir * -1 : 1;
-  arSortCol = col;
-  var tbody = document.getElementById('ar-table-body');
-  if (tbody) tbody.innerHTML = buildARRows();
-  ['client','id','invdate','amt','due','expected','bucket'].forEach(function(c) {
-    var th = document.getElementById('ar-th-'+c);
-    if (!th) return;
-    th.querySelector('.ar-sort-arrow').textContent = arSortCol===c ? (arSortDir===1 ? ' ▲' : ' ▼') : ' ⇅';
-    th.style.color = arSortCol===c ? 'var(--accent)' : '';
-  });
-}
-
-function arTh(col, label) {
-  var active = arSortCol === col;
-  var arrow  = active ? (arSortDir===1 ? ' ▲' : ' ▼') : ' ⇅';
-  return '<th id="ar-th-'+col+'" onclick="sortARBy(''+col+'')" '
-    +'style="position:sticky;top:0;background:var(--navy-2);cursor:pointer;user-select:none;white-space:nowrap;z-index:2;'
-    +(active?'color:var(--accent);':'')+'">'
-    +label+'<span class="ar-sort-arrow" style="font-size:9px;opacity:0.6">'+arrow+'</span></th>';
-}
-
 function renderAR() {
   const el = document.getElementById('ar-content');
   if (!el) return;
@@ -2262,18 +2200,44 @@ function renderAR() {
   }, 0);
   var avgDays = arInvoices.length > 0 ? Math.round(totalDaysOut / arInvoices.length) : 0;
 
+  // Build all-invoices summary table
+  var allSorted = arInvoices.slice().sort(function(a,b) {
+    var order = {'60+':0,'31-60':1,'1-30':2,'current':3};
+    var bo = (order[a.bucket]||9) - (order[b.bucket]||9);
+    if (bo !== 0) return bo;
+    return b.amt - a.amt;
+  });
+  var allRows = allSorted.map(function(inv) {
+    var daysOver = Math.round((TODAY - new Date(inv.due)) / 86400000);
+    var daysStr  = daysOver > 0 ? daysOver + 'd overdue' : daysOver === 0 ? 'Due today' : Math.abs(daysOver) + 'd until due';
+    var bucketColors = {'current':'var(--green)','1-30':'var(--amber)','31-60':'var(--red)','60+':'#FF2D55'};
+    var bucketLabels = {'current':'CURRENT','1-30':'1-30d','31-60':'31-60d','60+':'60+d'};
+    var bc = bucketColors[inv.bucket] || 'var(--white-faint)';
+    var bl = bucketLabels[inv.bucket] || inv.bucket;
+    // Expected date display
+    var expCell = inv.expectedDate
+      ? '<td class="m" style="font-size:13px;color:var(--green);font-weight:600">'+inv.expectedDate+'</td>'
+      : '<td class="m" style="font-size:12px;color:var(--white-faint);font-style:italic">— not set</td>';
+    return '<tr>'
+      +'<td class="b" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px">'+inv.client+'</td>'
+      +'<td class="m" style="font-size:13px">'+inv.id+'</td>'
+      +'<td class="m" style="color:'+bc+';font-size:15px;font-weight:700">'+fmt(inv.amt)+'</td>'
+      +'<td class="m" style="font-size:13px">'+inv.due+'</td>'
+      +expCell
+      +'<td class="m" style="color:'+(daysOver>0?bc:'var(--white-faint)')+';font-size:13px;font-weight:600">'+daysStr+'</td>'
+      +'<td><span class="pill" style="background:'+bc+'22;color:'+bc+';border:1px solid '+bc+'44;font-size:11px">'+bl+'</span></td>'
+      +'<td><button onclick="openAREdit(\''+inv.id+'\')" style="background:var(--navy-4);border:1px solid var(--border);color:var(--white-faint);padding:5px 10px;border-radius:4px;font-size:11px;font-family:\'DM Mono\',monospace;cursor:pointer">✎ Edit</button></td>'
+    +'</tr>';
+  }).join('');
+
   var allInvoicesTable = '<div class="card mb16">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
       +'<div class="sec" style="margin-bottom:0;font-size:13px">All Open Invoices ('+arInvoices.length+')</div>'
-      +'<div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--white-faint)">Click any column header to sort &middot; click again to reverse</div>'
+      +'<div style="font-size:11px;font-family:\'DM Mono\',monospace;color:var(--white-faint)">Sorted by aging · click ✎ Edit to set expected date</div>'
     +'</div>'
     +'<div style="max-height:500px;overflow-y:auto">'
-    +'<table style="border-collapse:collapse;width:100%"><thead><tr>'
-      +arTh('client','Client')+arTh('id','Invoice')+arTh('invdate','Inv Date')
-      +arTh('amt','Amount')+arTh('due','Due Date')+arTh('expected','Expected')
-      +arTh('bucket','Aging')+'<th style="position:sticky;top:0;background:var(--navy-2);z-index:2"></th>'
-    +'</tr></thead>'
-    +'<tbody id="ar-table-body">'+buildARRows()+'</tbody></table>'
+    +'<table><thead><tr><th>Client</th><th>Invoice</th><th>Amount</th><th>Due Date</th><th>Expected</th><th>Status</th><th>Bucket</th><th></th></tr></thead>'
+    +'<tbody>'+allRows+'</tbody></table>'
     +'</div></div>';
 
   el.innerHTML =
@@ -2569,27 +2533,11 @@ function renderDashboard() {
 
 const PIN_KEY      = 'ccc_pin_v2';
 const LOCK_TIMEOUT = 30 * 60 * 1000;
-
-// Safe localStorage wrapper — falls back to in-memory if storage is blocked
-// (handles Safari ITP, incognito restrictions, iframe sandboxing, etc.)
-var _memStore = {};
-function lsGet(key) {
-  try { return localStorage.getItem(key); }
-  catch(e) { return _memStore[key] !== undefined ? _memStore[key] : null; }
-}
-function lsSet(key, val) {
-  try { localStorage.setItem(key, val); }
-  catch(e) { _memStore[key] = val; }
-}
-function lsRemove(key) {
-  try { localStorage.removeItem(key); }
-  catch(e) { delete _memStore[key]; }
-}
 // ── PASTE YOUR APPS SCRIPT URL HERE (saves you re-entering on new devices) ──
 var DEFAULT_SHEETS_URL = '';  // e.g. 'https://script.google.com/macros/s/ABC123/exec'
 
 var SHEETS_URL = DEFAULT_SHEETS_URL
-              || lsGet('ccc_sheets_url')
+              || localStorage.getItem('ccc_sheets_url')
               || '';
 
 var pinBuffer   = '';
@@ -2636,7 +2584,7 @@ function handlePinInput(digit) {
     return;
   }
 
-  var hasPIN = lsGet(PIN_KEY);
+  var hasPIN = localStorage.getItem(PIN_KEY);
 
   if (digit === 'back') {
     if (!hasPIN && pinStage === 'confirm') {
@@ -2695,7 +2643,7 @@ function handlePinInput(digit) {
     pinDots(pinConfirm.length);
     if (pinConfirm.length === 4) {
       if (pinBuffer === pinConfirm) {
-        lsSet(PIN_KEY, simpleHash(pinBuffer));
+        localStorage.setItem(PIN_KEY, simpleHash(pinBuffer));
         pinBuffer  = '';
         pinConfirm = '';
         pinStage   = 'enter';
@@ -2719,7 +2667,7 @@ function handlePinInput(digit) {
 
 function resetPIN() {
   if (!confirm('Reset PIN? You will need to set a new one.')) return;
-  lsRemove(PIN_KEY);
+  localStorage.removeItem(PIN_KEY);
   pinBuffer = ''; pinConfirm = ''; pinStage = 'enter'; failCount = 0;
   var em = document.getElementById('pin-entry-mode');
   var sm = document.getElementById('pin-setup-mode');
@@ -2871,7 +2819,7 @@ function saveSheetUrl() {
   var val = (document.getElementById('sheets-url-input').value || '').trim() || DEFAULT_SHEETS_URL;
   if (val && val.indexOf('https://script.google.com') === 0) {
     SHEETS_URL = val;
-    lsSet('ccc_sheets_url', val);
+    localStorage.setItem('ccc_sheets_url', val);
     document.getElementById('sheets-url-modal').style.display = 'none';
     showSyncStatus('Sheets URL saved', 'var(--green)');
     loadFromSheets();
@@ -2905,8 +2853,6 @@ function saveFullAR() {
 
 var jnConfigured = false;  // set to true when Apps Script reports JN key is present
 var jnSyncing    = false;
-var arSortCol    = 'bucket';
-var arSortDir    = 1;
 
 function showJNSyncButtons() {
   // Show/hide sync buttons based on whether JN API is configured in Apps Script
@@ -3048,12 +2994,12 @@ var KPI_STORE_KEY = 'ccc_kpi_snapshots';
 
 function getKPISnapshots() {
   try {
-    return JSON.parse(lsGet(KPI_STORE_KEY) || '[]');
+    return JSON.parse(localStorage.getItem(KPI_STORE_KEY) || '[]');
   } catch(e) { return []; }
 }
 
 function saveKPISnapshots(snaps) {
-  lsSet(KPI_STORE_KEY, JSON.stringify(snaps));
+  localStorage.setItem(KPI_STORE_KEY, JSON.stringify(snaps));
 }
 
 function currentKPIValues() {
@@ -4290,7 +4236,7 @@ var bufferData = {
 };
 
 function saveBuffer() {
-  lsSet('ccc_buffer', JSON.stringify(bufferData));
+  localStorage.setItem('ccc_buffer', JSON.stringify(bufferData));
   if (!SHEETS_URL) return;
   fetch(SHEETS_URL, {
     method: 'POST',
@@ -4301,7 +4247,7 @@ function saveBuffer() {
 
 function loadBufferLocal() {
   try {
-    var stored = JSON.parse(lsGet('ccc_buffer') || 'null');
+    var stored = JSON.parse(localStorage.getItem('ccc_buffer') || 'null');
     if (stored) bufferData = stored;
   } catch(e) {}
 }
@@ -4496,8 +4442,9 @@ if (_siWeek) {
   });
 }
 updateBadge();
+updateScenarioHints();
 (function initPIN() {
-  var hasPIN = lsGet(PIN_KEY);
+  var hasPIN = localStorage.getItem(PIN_KEY);
   var em = document.getElementById('pin-entry-mode');
   var sm = document.getElementById('pin-setup-mode');
   if (hasPIN) {
