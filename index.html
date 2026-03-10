@@ -2066,7 +2066,7 @@ function clearExpectedDate() {
 }
 
 // ── RENDER ────────────────────────────────────────────────────────
-// ── AR TABLE SORT — global so onclick handlers can reach them ────────────────
+// ── AR TABLE SORT — global scope so onclick handlers can reach them ──────────
 function buildARRows() {
   var bucketOrder = {'60+':0,'31-60':1,'1-30':2,'current':3};
   var sorted = arInvoices.slice().sort(function(a,b) {
@@ -2164,8 +2164,8 @@ function renderAR() {
     const names = wkInvoices[i].map(inv => inv.client.split(' ')[0]).join(', ');
     return `<div style="display:flex;align-items:center;gap:9px;margin-bottom:6px">
       <div style="width:42px;font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">${lbl.split(' ')[1]||lbl}</div>
-      <div style="flex:1;height:26px;background:var(--navy-5);border-radius:3px;overflow:hidden">
-        <div style="height:100%;width:${pct}%;background:${v>80000?'#10B981':'#3B82F6'};display:flex;align-items:center;padding-left:9px;font-size:13px;font-family:'DM Mono',monospace;color:white;font-weight:600;white-space:nowrap;overflow:hidden">${v>0?fmt(v):''}</div>
+      <div style="flex:1;height:18px;background:var(--navy-5);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${v>80000?'#10B981':'#3B82F6'};display:flex;align-items:center;padding-left:7px;font-size:9px;font-family:'DM Mono',monospace;color:white;font-weight:600;white-space:nowrap;overflow:hidden">${v>0?fmt(v):''}</div>
       </div>
       <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);width:110px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${names}</div>
     </div>`;
@@ -2248,8 +2248,8 @@ function renderAR() {
     const pct = maxB > 0 ? Math.round(val/maxB*100) : 0;
     return `<div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
       <div style="width:52px;font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);text-align:right">${label}</div>
-      <div style="flex:1;height:26px;background:var(--navy-5);border-radius:3px;overflow:hidden">
-        <div style="height:100%;width:${pct}%;background:${col};display:flex;align-items:center;padding-left:9px;font-size:13px;font-family:'DM Mono',monospace;color:white;font-weight:600">${val > 0 ? fmt(val) : ''}</div>
+      <div style="flex:1;height:18px;background:var(--navy-5);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${col};display:flex;align-items:center;padding-left:7px;font-size:9px;font-family:'DM Mono',monospace;color:white;font-weight:600">${val > 0 ? fmt(val) : ''}</div>
       </div>
     </div>`;
   }
@@ -2262,7 +2262,6 @@ function renderAR() {
   }, 0);
   var avgDays = arInvoices.length > 0 ? Math.round(totalDaysOut / arInvoices.length) : 0;
 
-  // All-invoices table — uses global buildARRows() + sortARBy() + arTh()
   var allInvoicesTable = '<div class="card mb16">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
       +'<div class="sec" style="margin-bottom:0;font-size:13px">All Open Invoices ('+arInvoices.length+')</div>'
@@ -2570,11 +2569,27 @@ function renderDashboard() {
 
 const PIN_KEY      = 'ccc_pin_v2';
 const LOCK_TIMEOUT = 30 * 60 * 1000;
+
+// Safe localStorage wrapper — falls back to in-memory if storage is blocked
+// (handles Safari ITP, incognito restrictions, iframe sandboxing, etc.)
+var _memStore = {};
+function lsGet(key) {
+  try { return localStorage.getItem(key); }
+  catch(e) { return _memStore[key] !== undefined ? _memStore[key] : null; }
+}
+function lsSet(key, val) {
+  try { localStorage.setItem(key, val); }
+  catch(e) { _memStore[key] = val; }
+}
+function lsRemove(key) {
+  try { localStorage.removeItem(key); }
+  catch(e) { delete _memStore[key]; }
+}
 // ── PASTE YOUR APPS SCRIPT URL HERE (saves you re-entering on new devices) ──
 var DEFAULT_SHEETS_URL = '';  // e.g. 'https://script.google.com/macros/s/ABC123/exec'
 
 var SHEETS_URL = DEFAULT_SHEETS_URL
-              || localStorage.getItem('ccc_sheets_url')
+              || lsGet('ccc_sheets_url')
               || '';
 
 var pinBuffer   = '';
@@ -2621,7 +2636,7 @@ function handlePinInput(digit) {
     return;
   }
 
-  var hasPIN = localStorage.getItem(PIN_KEY);
+  var hasPIN = lsGet(PIN_KEY);
 
   if (digit === 'back') {
     if (!hasPIN && pinStage === 'confirm') {
@@ -2680,7 +2695,7 @@ function handlePinInput(digit) {
     pinDots(pinConfirm.length);
     if (pinConfirm.length === 4) {
       if (pinBuffer === pinConfirm) {
-        localStorage.setItem(PIN_KEY, simpleHash(pinBuffer));
+        lsSet(PIN_KEY, simpleHash(pinBuffer));
         pinBuffer  = '';
         pinConfirm = '';
         pinStage   = 'enter';
@@ -2704,7 +2719,7 @@ function handlePinInput(digit) {
 
 function resetPIN() {
   if (!confirm('Reset PIN? You will need to set a new one.')) return;
-  localStorage.removeItem(PIN_KEY);
+  lsRemove(PIN_KEY);
   pinBuffer = ''; pinConfirm = ''; pinStage = 'enter'; failCount = 0;
   var em = document.getElementById('pin-entry-mode');
   var sm = document.getElementById('pin-setup-mode');
@@ -2856,7 +2871,7 @@ function saveSheetUrl() {
   var val = (document.getElementById('sheets-url-input').value || '').trim() || DEFAULT_SHEETS_URL;
   if (val && val.indexOf('https://script.google.com') === 0) {
     SHEETS_URL = val;
-    localStorage.setItem('ccc_sheets_url', val);
+    lsSet('ccc_sheets_url', val);
     document.getElementById('sheets-url-modal').style.display = 'none';
     showSyncStatus('Sheets URL saved', 'var(--green)');
     loadFromSheets();
@@ -3033,12 +3048,12 @@ var KPI_STORE_KEY = 'ccc_kpi_snapshots';
 
 function getKPISnapshots() {
   try {
-    return JSON.parse(localStorage.getItem(KPI_STORE_KEY) || '[]');
+    return JSON.parse(lsGet(KPI_STORE_KEY) || '[]');
   } catch(e) { return []; }
 }
 
 function saveKPISnapshots(snaps) {
-  localStorage.setItem(KPI_STORE_KEY, JSON.stringify(snaps));
+  lsSet(KPI_STORE_KEY, JSON.stringify(snaps));
 }
 
 function currentKPIValues() {
@@ -3628,7 +3643,7 @@ function renderBacklog() {
     return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">
       <div style="width:44px;font-size:9px;font-family:'DM Mono',monospace;color:${isNear ? 'var(--white)':'var(--white-faint)'}">${lbl}</div>
       <div style="flex:1;height:20px;background:var(--navy-5);border-radius:3px;overflow:hidden">
-        <div style="height:100%;width:${pct}%;background:${col};display:flex;align-items:center;padding-left:9px;font-size:13px;font-family:'DM Mono',monospace;color:white;font-weight:600;white-space:nowrap;overflow:hidden">${fmt(bk.total)}</div>
+        <div style="height:100%;width:${pct}%;background:${col};display:flex;align-items:center;padding-left:8px;font-size:9px;font-family:'DM Mono',monospace;color:white;font-weight:600;white-space:nowrap;overflow:hidden">${fmt(bk.total)}</div>
       </div>
       <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);width:140px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${bk.projects.join(', ')}</div>
     </div>`;
@@ -4275,7 +4290,7 @@ var bufferData = {
 };
 
 function saveBuffer() {
-  localStorage.setItem('ccc_buffer', JSON.stringify(bufferData));
+  lsSet('ccc_buffer', JSON.stringify(bufferData));
   if (!SHEETS_URL) return;
   fetch(SHEETS_URL, {
     method: 'POST',
@@ -4286,7 +4301,7 @@ function saveBuffer() {
 
 function loadBufferLocal() {
   try {
-    var stored = JSON.parse(localStorage.getItem('ccc_buffer') || 'null');
+    var stored = JSON.parse(lsGet('ccc_buffer') || 'null');
     if (stored) bufferData = stored;
   } catch(e) {}
 }
@@ -4482,7 +4497,7 @@ if (_siWeek) {
 }
 updateBadge();
 (function initPIN() {
-  var hasPIN = localStorage.getItem(PIN_KEY);
+  var hasPIN = lsGet(PIN_KEY);
   var em = document.getElementById('pin-entry-mode');
   var sm = document.getElementById('pin-setup-mode');
   if (hasPIN) {
