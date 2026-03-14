@@ -420,7 +420,7 @@
   </div>
 
   <div class="sidebar-bottom">
-    <div class="conn-item"><div class="conn-dot"></div>Bill.com<span class="conn-label">CSV</span></div>
+    <div class="conn-item" id="bill-conn-item"><div class="conn-dot" id="bill-conn-dot"></div>Bill.com<span class="conn-label" id="bill-conn-label">CSV</span></div>
     <div class="conn-item" id="jn-conn-item"><div class="conn-dot" id="jn-conn-dot"></div>JobNimbus<span class="conn-label" id="jn-conn-label">CSV</span></div>
     <div class="conn-item"><div class="conn-dot"></div>Asana<span class="conn-label">MOCK</span></div>
     <div class="conn-item"><div class="conn-dot"></div>Plaid<span class="conn-label">MOCK</span></div>
@@ -597,7 +597,7 @@
 
     <!-- TRIAGE PAGE -->
     <div class="page" id="page-triage">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;gap:8px"><button onclick="openImportModal('bills')" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:'DM Mono',monospace;cursor:pointer;">&#11014; Import Bill.com CSV</button><button onclick="openImportModal('ar')" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:'DM Mono',monospace;cursor:pointer;">&#11014; Import JobNimbus CSV</button><button id="jn-sync-btn-triage" onclick="triggerJNSync()" style="background:linear-gradient(135deg,#06B6D4,#0891B2);border:none;color:white;padding:7px 13px;border-radius:6px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer;display:none;">&#x21BB; Sync JobNimbus API</button></div><div class="tsum" id="triage-summary"></div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;gap:8px"><button onclick="openImportModal('bills')" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:'DM Mono',monospace;cursor:pointer;">&#11014; Import Bill.com CSV</button><button onclick="openImportModal('ar')" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:'DM Mono',monospace;cursor:pointer;">&#11014; Import JobNimbus CSV</button><button id="bill-sync-btn-triage" onclick="triggerBillSync()" style="background:linear-gradient(135deg,#6366F1,#4F46E5);border:none;color:white;padding:7px 13px;border-radius:6px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer;display:none;">&#x21BB; Sync Bill.com API</button><button id="jn-sync-btn-triage" onclick="triggerJNSync()" style="background:linear-gradient(135deg,#06B6D4,#0891B2);border:none;color:white;padding:7px 13px;border-radius:6px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer;display:none;">&#x21BB; Sync JobNimbus API</button><span id="bill-sync-status" style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);align-self:center;display:none;"></span></div><div class="tsum" id="triage-summary"></div>
       <div class="ttabs">
         <div class="ttab active" onclick="switchTab('active',this)">Active Queue<span class="tc" id="tc-active">0</span></div>
         <div class="ttab" onclick="switchTab('snoozed',this)">Snoozed<span class="tc" id="tc-snoozed">0</span></div>
@@ -2773,8 +2773,10 @@ function loadFromSheets() {
     .then(function(data) {
       if (!data.ok) throw new Error(data.error);
       // Check if JobNimbus API key is configured in Apps Script
-      if (data.jnConfigured) { jnConfigured = true; }
+      if (data.jnConfigured)   { jnConfigured   = true; }
+      if (data.billConfigured) { billConfigured = true; }
       showJNSyncButtons();
+      showBillSyncButtons();
       var s = data.settings || {};
       if (s.biweeklyPayroll) biweeklyPayroll = Number(s.biweeklyPayroll);
       if (s.rentAmount)     rentAmount     = Number(s.rentAmount);
@@ -2895,8 +2897,10 @@ function saveFullAR() {
 // JOBNIMBUS LIVE API SYNC
 // ══════════════════════════════════════════════════════════════════
 
-var jnConfigured = false;  // set to true when Apps Script reports JN key is present
+var jnConfigured   = false;  // set to true when Apps Script reports JN key is present
+var billConfigured = false;  // set to true when Apps Script reports Bill.com credentials present
 var jnSyncing    = false;
+var billSyncing  = false;
 var arSortCol    = 'bucket';
 var arSortDir    = 1;
 
@@ -3000,6 +3004,107 @@ function triggerJNSync() {
     btns.forEach(function(b) { b.innerHTML = '&#x21BB; Sync JobNimbus API'; b.style.opacity = '1'; });
     setJNSyncStatus('Sync trigger error: ' + err.message, 'var(--red)');
     showSyncStatus('JN sync failed', 'var(--red)');
+  });
+}
+
+// ── BILL.COM API SYNC ─────────────────────────────────────────────
+function showBillSyncButtons() {
+  var btns = ['bill-sync-btn-triage'];
+  btns.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = billConfigured ? 'inline-block' : 'none';
+  });
+  var dot   = document.getElementById('bill-conn-dot');
+  var label = document.getElementById('bill-conn-label');
+  if (dot && billConfigured) {
+    dot.style.background  = 'var(--green)';
+    dot.style.boxShadow   = '0 0 4px var(--green)';
+    dot.style.animation   = 'none';
+  }
+  if (label && billConfigured) {
+    label.textContent        = 'API';
+    label.style.background   = 'rgba(16,185,129,0.15)';
+    label.style.color        = '#10B981';
+    label.style.border       = '1px solid rgba(16,185,129,0.3)';
+    label.style.padding      = '1px 5px';
+    label.style.borderRadius = '3px';
+  }
+}
+
+function setBillSyncStatus(msg, color) {
+  var el = document.getElementById('bill-sync-status');
+  if (!el) return;
+  el.textContent  = msg;
+  el.style.color  = color || 'var(--white-faint)';
+  el.style.display = msg ? 'inline' : 'none';
+  if (msg) {
+    clearTimeout(el._t);
+    el._t = setTimeout(function() { el.style.display = 'none'; }, 8000);
+  }
+}
+
+function triggerBillSync() {
+  if (billSyncing) return;
+  if (!SHEETS_URL) { showSyncStatus('No Sheets URL configured', 'var(--amber)'); return; }
+
+  billSyncing = true;
+  var btns = document.querySelectorAll('[id^="bill-sync-btn"]');
+  btns.forEach(function(b) { b.textContent = '⟳ Syncing...'; b.style.opacity = '0.6'; });
+  setBillSyncStatus('Fetching bills from Bill.com...', 'var(--accent)');
+  showSyncStatus('Syncing Bill.com...', 'var(--accent)');
+
+  // Fire-and-forget GET — Apps Script logs in, fetches bills, saves to Sheets
+  fetch(SHEETS_URL + '?action=bill_sync&t=' + Date.now(), { mode: 'no-cors' })
+  .then(function() {
+    setBillSyncStatus('Saving to Sheets… reloading in a moment...', 'var(--accent)');
+    setTimeout(function() {
+      fetch(SHEETS_URL + '?t=' + Date.now())
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        billSyncing = false;
+        btns.forEach(function(b) { b.innerHTML = '&#x21BB; Sync Bill.com API'; b.style.opacity = '1'; });
+
+        if (!data.ok) {
+          setBillSyncStatus('Reload failed: ' + (data.error || 'Unknown'), 'var(--red)');
+          showSyncStatus('Bill.com reload failed', 'var(--red)');
+          return;
+        }
+
+        var freshBills = data.fullBills || [];
+        if (freshBills.length) {
+          // Merge with existing bills_state (snooze/paid flags)
+          var stateMap = {};
+          bills.forEach(function(b) { stateMap[b.id] = { status: b.status, sc: b.sc, snoozeUntil: b.snoozeUntil }; });
+
+          bills.length = 0;
+          freshBills.forEach(function(b) {
+            var saved = stateMap[b.id];
+            if (saved) { b.status = saved.status; b.sc = saved.sc; b.snoozeUntil = saved.snoozeUntil; }
+            bills.push(b);
+          });
+
+          renderTriage();
+          renderDashboard();
+          renderOutflow();
+          setBillSyncStatus('Synced ' + freshBills.length + ' bills from Bill.com ✓', 'var(--green)');
+          showSyncStatus('Bill.com synced — ' + freshBills.length + ' bills', 'var(--green)');
+        } else {
+          setBillSyncStatus('Sync complete — no open bills returned', 'var(--white-faint)');
+          showSyncStatus('Bill.com sync complete', 'var(--green)');
+        }
+      })
+      .catch(function(err) {
+        billSyncing = false;
+        btns.forEach(function(b) { b.innerHTML = '&#x21BB; Sync Bill.com API'; b.style.opacity = '1'; });
+        setBillSyncStatus('Reload error: ' + err.message, 'var(--red)');
+      });
+    }, 12000); // 12s delay — same as JN pattern
+  })
+  .catch(function(err) {
+    billSyncing = false;
+    btns.forEach(function(b) { b.innerHTML = '&#x21BB; Sync Bill.com API'; b.style.opacity = '1'; });
+    setBillSyncStatus('Sync trigger error: ' + err.message, 'var(--red)');
+    showSyncStatus('Bill.com sync failed', 'var(--red)');
   });
 }
 
