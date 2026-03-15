@@ -3099,7 +3099,7 @@ function triggerBillSync() {
         btns.forEach(function(b) { b.innerHTML = '&#x21BB; Sync Bill.com API'; b.style.opacity = '1'; });
         setBillSyncStatus('Reload error: ' + err.message, 'var(--red)');
       });
-    }, 12000); // 12s delay — same as JN pattern
+    }, 20000); // 20s delay — Bill.com needs login + 2 status fetches
   })
   .catch(function(err) {
     billSyncing = false;
