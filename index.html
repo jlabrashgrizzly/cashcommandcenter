@@ -600,8 +600,26 @@
       <div style="display:flex;justify-content:flex-end;margin-bottom:10px;gap:8px"><button onclick="openImportModal('bills')" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:'DM Mono',monospace;cursor:pointer;">&#11014; Import Bill.com CSV</button><button id="bill-sync-btn-triage" onclick="triggerBillSync()" style="background:linear-gradient(135deg,#6366F1,#4F46E5);border:none;color:white;padding:7px 13px;border-radius:6px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer;display:none;">&#x21BB; Sync Bill.com API</button><span id="bill-sync-status" style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);align-self:center;display:none;"></span></div><div class="tsum" id="triage-summary"></div>
       <div class="ttabs">
         <div class="ttab active" onclick="switchTab('active',this)">Active Queue<span class="tc" id="tc-active">0</span></div>
+        <div class="ttab" onclick="switchTab('due7',this)">Due in 7 Days<span class="tc" id="tc-due7">0</span></div>
+        <div class="ttab" onclick="switchTab('quickwins',this)">Quick Wins<span class="tc" id="tc-quickwins">0</span></div>
         <div class="ttab" onclick="switchTab('snoozed',this)">Snoozed<span class="tc" id="tc-snoozed">0</span></div>
         <div class="ttab" onclick="switchTab('paid',this)">Paid This Week<span class="tc" id="tc-paid">0</span></div>
+      </div>
+      <div id="triage-controls" style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);">SORT</span>
+          <select id="triage-sort" onchange="renderTriage()" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:5px 8px;border-radius:6px;font-size:10px;font-family:'DM Mono',monospace;cursor:pointer;">
+            <option value="priority">Priority → Age</option>
+            <option value="due-asc">Due Date (soonest)</option>
+            <option value="amt-asc">Amount (low → high)</option>
+            <option value="amt-desc">Amount (high → low)</option>
+          </select>
+        </div>
+        <div id="quickwins-controls" style="display:none;align-items:center;gap:6px;">
+          <span style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);">MAX $</span>
+          <input id="qw-threshold" type="number" value="500" min="0" step="100" onchange="renderTriage()" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:5px 8px;border-radius:6px;font-size:10px;font-family:'DM Mono',monospace;width:80px;"/>
+          <span style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);">— past-due bills under this amount</span>
+        </div>
       </div>
       <div id="triage-list"></div>
     </div>
@@ -1004,7 +1022,15 @@ function dAgo(ds){return Math.round((TODAY-new Date(ds))/86400000);}
 function dUntil(ds){return Math.round((new Date(ds)-TODAY)/86400000);}
 function fmt(n){return '$'+n.toLocaleString('en-US');}
 
-function switchTab(tab,el){curTab=tab;document.querySelectorAll('.ttab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderTriage();}
+function switchTab(tab,el){
+  curTab=tab;
+  document.querySelectorAll('.ttab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  // Show quick wins threshold control only on that tab
+  var qwc = document.getElementById('quickwins-controls');
+  if (qwc) qwc.style.display = tab === 'quickwins' ? 'flex' : 'none';
+  renderTriage();
+}
 function setPri(id,val,sel){bills.find(b=>b.id===id).pri=val;sel.className='bps '+val;renderTriage();}
 function snooze(id){const b=bills.find(b=>b.id===id);b.status='snoozed';b.sc++;const d=new Date(TODAY);d.setDate(d.getDate()+7);b.snoozeUntil=d.toISOString().split('T')[0];renderTriage();updateBadge();saveBillsState();}
 function unsnooze(id){const b=bills.find(b=>b.id===id);b.status='active';b.snoozeUntil=null;renderTriage();updateBadge();saveBillsState();}
@@ -1012,10 +1038,13 @@ function markPaid(id){bills.find(b=>b.id===id).status='paid';renderTriage();upda
 function updateBadge(){const el=document.getElementById('triage-badge');if(el)el.textContent=bills.filter(b=>b.status==='active').length;}
 
 function getVisible(){
+  var threshold = parseFloat((document.getElementById('qw-threshold')||{}).value||500);
   return bills.filter(b=>{
     if(b.status==='snoozed'&&b.snoozeUntil&&new Date(b.snoozeUntil)<=TODAY)b.status='active';
-    if(curTab==='active')return b.status==='active';
-    if(curTab==='snoozed')return b.status==='snoozed';
+    if(curTab==='active')    return b.status==='active';
+    if(curTab==='snoozed')   return b.status==='snoozed';
+    if(curTab==='due7')      return b.status==='active' && dUntil(b.due) <= 7 && dAgo(b.due) <= 0;
+    if(curTab==='quickwins') return b.status==='active' && dAgo(b.due) > 0 && b.amt <= threshold;
     return b.status==='paid';
   });
 }
@@ -1024,33 +1053,68 @@ function renderTriage(){
   const active=bills.filter(b=>b.status==='active');
   const snoozed=bills.filter(b=>b.status==='snoozed');
   const paid=bills.filter(b=>b.status==='paid');
+  const threshold = parseFloat((document.getElementById('qw-threshold')||{}).value||500);
+  const due7Bills = active.filter(b=>dUntil(b.due)<=7 && dAgo(b.due)<=0);
+  const qwBills   = active.filter(b=>dAgo(b.due)>0 && b.amt<=threshold);
+
   document.getElementById('tc-active').textContent=active.length;
+  document.getElementById('tc-due7').textContent=due7Bills.length;
+  document.getElementById('tc-quickwins').textContent=qwBills.length;
   document.getElementById('tc-snoozed').textContent=snoozed.length;
   document.getElementById('tc-paid').textContent=paid.length;
+
   const totalDue=active.reduce((s,b)=>s+b.amt,0);
-  const critTotal=active.filter(b=>b.pri==='critical').reduce((s,b)=>s+b.amt,0);
+  const critTotal=active.filter(b=>b.pri==='critical'||b.pri==='delinquent').reduce((s,b)=>s+b.amt,0);
   const pdCount=active.filter(b=>dAgo(b.due)>0).length;
   const snzTotal=snoozed.reduce((s,b)=>s+b.amt,0);
+
+  let summaryExtra='';
+  if(curTab==='due7'){const t=due7Bills.reduce((s,b)=>s+b.amt,0);summaryExtra=' · <span style="color:var(--amber)">'+fmt(t)+' due in 7 days</span>';}
+  if(curTab==='quickwins'){const t=qwBills.reduce((s,b)=>s+b.amt,0);summaryExtra=' · <span style="color:var(--green)">'+qwBills.length+' quick wins = '+fmt(t)+'</span>';}
+
   document.getElementById('triage-summary').innerHTML=
-    '<div class="ts"><div class="kl">Total Due (Active)</div><div class="kv red" style="font-size:20px">'+fmt(totalDue)+'</div><div class="ks">'+active.length+' invoices</div></div>'+
-    '<div class="ts"><div class="kl">Critical Total</div><div class="kv red" style="font-size:20px">'+fmt(critTotal)+'</div><div class="ks">Pay first</div></div>'+
+    '<div class="ts"><div class="kl">Total Due (Active)</div><div class="kv red" style="font-size:20px">'+fmt(totalDue)+'</div><div class="ks">'+active.length+' invoices'+summaryExtra+'</div></div>'+
+    '<div class="ts"><div class="kl">Past Due Total</div><div class="kv red" style="font-size:20px">'+fmt(critTotal)+'</div><div class="ks">Pay first</div></div>'+
     '<div class="ts"><div class="kl">Past Due Count</div><div class="kv amber" style="font-size:20px">'+pdCount+'</div><div class="ks">already overdue</div></div>'+
     '<div class="ts"><div class="kl">Snoozed Value</div><div class="kv" style="font-size:20px;color:var(--white-dim)">'+fmt(snzTotal)+'</div><div class="ks">'+snoozed.length+' bills deferred</div></div>';
+
   let visible=getVisible();
-  if(curTab==='active')visible.sort((a,b)=>{const pd=PORDER[a.pri]-PORDER[b.pri];return pd!==0?pd:dAgo(b.due)-dAgo(a.due);});
+  const sortVal=(document.getElementById('triage-sort')||{}).value||'priority';
+  if(curTab==='quickwins'){
+    visible.sort((a,b)=>a.amt-b.amt);
+  } else if(sortVal==='priority'){
+    visible.sort((a,b)=>{const pd=PORDER[a.pri]-PORDER[b.pri];return pd!==0?pd:dAgo(b.due)-dAgo(a.due);});
+  } else if(sortVal==='due-asc'){
+    visible.sort((a,b)=>new Date(a.due)-new Date(b.due));
+  } else if(sortVal==='amt-asc'){
+    visible.sort((a,b)=>a.amt-b.amt);
+  } else if(sortVal==='amt-desc'){
+    visible.sort((a,b)=>b.amt-a.amt);
+  }
+
   const list=document.getElementById('triage-list');
-  if(!visible.length){list.innerHTML='<div class="empty"><div class="ei">'+(curTab==='paid'?'✅':'😌')+'</div>'+(curTab==='active'?'All cleared or snoozed.':curTab==='snoozed'?'No snoozed bills.':'None paid yet.')+'</div>';return;}
+  const emptyMsgs={active:{icon:'😌',msg:'All cleared or snoozed.'},due7:{icon:'✅',msg:'Nothing due in the next 7 days.'},quickwins:{icon:'🏆',msg:'No past-due bills under $'+threshold+'. Try raising the threshold.'},snoozed:{icon:'💤',msg:'No snoozed bills.'},paid:{icon:'🎉',msg:'None paid yet this week.'}};
+  if(!visible.length){const em=emptyMsgs[curTab]||emptyMsgs.active;list.innerHTML='<div class="empty"><div class="ei">'+em.icon+'</div>'+em.msg+'</div>';return;}
+
   list.innerHTML=visible.map(b=>{
     const ago=dAgo(b.due),until=dUntil(b.due),past=ago>0;
     const amtCls=past?'r':(until<=3?'a':'d');
     const dateEl=past?'<span class="od-badge">'+ago+'d OVERDUE</span>':'Due in '+until+'d ('+b.due+')';
     const snzEl=b.sc>0?'<span class="snz-badge">💤 '+b.sc+'×</span>':'';
     const retEl=b.status==='snoozed'&&b.snoozeUntil?'<div style="font-size:10px;color:var(--amber);font-family:\'DM Mono\',monospace;margin-top:4px">Returns: '+b.snoozeUntil+'</div>':'';
-    const actions=b.status==='snoozed'?'<button class="bbtn" onclick="unsnooze('+b.id+')">↩ Restore</button>':b.status==='paid'?'<span class="pill g">✓ PAID</span>':'<button class="bbtn pay" onclick="markPaid('+b.id+')">✓ Paid</button><button class="bbtn snz" onclick="snooze('+b.id+')">💤 7d</button>';
-    const priEl=(b.status==='paid'||b.status==='snoozed')?'<span class="pill '+(b.pri==='critical'?'r':b.pri==='delinquent'?'a':b.pri==='standard'?'ac':'')+'">'+b.pri.toUpperCase()+'</span>':'<select class="bps '+b.pri+'" onchange="setPri('+b.id+',this.value,this)"><option value="critical"'+(b.pri==='critical'?' selected':'')+'>🔴 CRITICAL</option><option value="delinquent"'+(b.pri==='delinquent'?' selected':'')+'>🟡 DELINQUENT</option><option value="standard"'+(b.pri==='standard'?' selected':'')+'>🔵 STANDARD</option><option value="deferred"'+(b.pri==='deferred'?' selected':'')+'>⚪ DEFER</option></select>';
-    return '<div class="bc priority-'+b.pri+(b.status!=='active'?' '+b.status:'')+'"><span style="color:var(--white-faint);font-size:16px;cursor:grab;flex-shrink:0">⠿</span>'+priEl+'<div class="bi"><div class="bv">'+b.vendor+'</div><div class="bm"><span>'+b.cat+'</span><span>'+dateEl+'</span>'+snzEl+'</div>'+retEl+'</div><div class="bamt '+amtCls+'">'+fmt(b.amt)+'</div><div class="bactions">'+actions+'</div></div>';
+    const actions=b.status==='snoozed'?'<button class="bbtn" onclick="unsnooze(\''+b.id+'\')">↩ Restore</button>':b.status==='paid'?'<span class="pill g">✓ PAID</span>':'<button class="bbtn pay" onclick="markPaid(\''+b.id+'\')">✓ Paid</button><button class="bbtn snz" onclick="snooze(\''+b.id+'\')">💤 7d</button>';
+    const priEl=(b.status==='paid'||b.status==='snoozed')?'<span class="pill '+(b.pri==='critical'?'r':b.pri==='delinquent'?'a':b.pri==='standard'?'ac':'')+'" >'+b.pri.toUpperCase()+'</span>':'<select class="bps '+b.pri+'" onchange="setPri(\''+b.id+'\',this.value,this)"><option value="critical"'+(b.pri==='critical'?' selected':'')+'>🔴 CRITICAL</option><option value="delinquent"'+(b.pri==='delinquent'?' selected':'')+'>🟡 DELINQUENT</option><option value="standard"'+(b.pri==='standard'?' selected':'')+'>🔵 STANDARD</option><option value="deferred"'+(b.pri==='deferred'?' selected':'')+'>⚪ DEFER</option></select>';
+    const qwBadge=curTab==='quickwins'?'<span style="font-size:9px;background:rgba(16,185,129,0.15);color:#10B981;border:1px solid rgba(16,185,129,0.3);padding:1px 6px;border-radius:3px;font-family:\'DM Mono\',monospace;margin-left:4px">QUICK WIN</span>':'';
+    return '<div class="bc priority-'+b.pri+(b.status!=='active'?' '+b.status:'')+'">'
+      +'<span style="color:var(--white-faint);font-size:16px;cursor:grab;flex-shrink:0">⠿</span>'
+      +priEl
+      +'<div class="bi"><div class="bv">'+b.vendor+qwBadge+'</div><div class="bm"><span>'+b.cat+'</span><span>'+dateEl+'</span>'+snzEl+'</div>'+retEl+'</div>'
+      +'<div class="bamt '+amtCls+'">'+fmt(b.amt)+'</div>'
+      +'<div class="bactions">'+actions+'</div>'
+      +'</div>';
   }).join('');
 }
+
 
 // ── VENDOR TERMS ────────────────────────────────────────────────
 const vendors = [
