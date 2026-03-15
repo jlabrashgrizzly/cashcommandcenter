@@ -1035,6 +1035,7 @@ function setPri(id,val,sel){bills.find(b=>b.id===id).pri=val;sel.className='bps 
 function snooze(id){const b=bills.find(b=>b.id===id);b.status='snoozed';b.sc++;const d=new Date(TODAY);d.setDate(d.getDate()+7);b.snoozeUntil=d.toISOString().split('T')[0];renderTriage();updateBadge();saveBillsState();}
 function unsnooze(id){const b=bills.find(b=>b.id===id);b.status='active';b.snoozeUntil=null;renderTriage();updateBadge();saveBillsState();}
 function markPaid(id){bills.find(b=>b.id===id).status='paid';renderTriage();updateBadge();saveBillsState();}
+function unmarkPaid(id){bills.find(b=>b.id===id).status='active';renderTriage();updateBadge();saveBillsState();}
 function updateBadge(){const el=document.getElementById('triage-badge');if(el)el.textContent=bills.filter(b=>b.status==='active').length;}
 
 function getVisible(){
@@ -1102,7 +1103,7 @@ function renderTriage(){
     const dateEl=past?'<span class="od-badge">'+ago+'d OVERDUE</span>':'Due in '+until+'d ('+b.due+')';
     const snzEl=b.sc>0?'<span class="snz-badge">💤 '+b.sc+'×</span>':'';
     const retEl=b.status==='snoozed'&&b.snoozeUntil?'<div style="font-size:10px;color:var(--amber);font-family:\'DM Mono\',monospace;margin-top:4px">Returns: '+b.snoozeUntil+'</div>':'';
-    const actions=b.status==='snoozed'?'<button class="bbtn" onclick="unsnooze(\''+b.id+'\')">↩ Restore</button>':b.status==='paid'?'<span class="pill g">✓ PAID</span>':'<button class="bbtn pay" onclick="markPaid(\''+b.id+'\')">✓ Paid</button><button class="bbtn snz" onclick="snooze(\''+b.id+'\')">💤 7d</button>';
+    const actions=b.status==='snoozed'?'<button class="bbtn" onclick="unsnooze(\''+b.id+'\')">↩ Restore</button>':b.status==='paid'?'<span class="pill g">✓ PAID</span><button class="bbtn" onclick="unmarkPaid(\''+b.id+'\')" style="margin-left:4px">↩ Unmark</button>':'<button class="bbtn pay" onclick="markPaid(\''+b.id+'\')">✓ Paid</button><button class="bbtn snz" onclick="snooze(\''+b.id+'\')">💤 7d</button>';
     const priEl=(b.status==='paid'||b.status==='snoozed')?'<span class="pill '+(b.pri==='critical'?'r':b.pri==='delinquent'?'a':b.pri==='standard'?'ac':'')+'" >'+b.pri.toUpperCase()+'</span>':'<select class="bps '+b.pri+'" onchange="setPri(\''+b.id+'\',this.value,this)"><option value="critical"'+(b.pri==='critical'?' selected':'')+'>🔴 CRITICAL</option><option value="delinquent"'+(b.pri==='delinquent'?' selected':'')+'>🟡 DELINQUENT</option><option value="standard"'+(b.pri==='standard'?' selected':'')+'>🔵 STANDARD</option><option value="deferred"'+(b.pri==='deferred'?' selected':'')+'>⚪ DEFER</option></select>';
     const qwBadge=curTab==='quickwins'?'<span style="font-size:9px;background:rgba(16,185,129,0.15);color:#10B981;border:1px solid rgba(16,185,129,0.3);padding:1px 6px;border-radius:3px;font-family:\'DM Mono\',monospace;margin-left:4px">QUICK WIN</span>':'';
     return '<div class="bc priority-'+b.pri+(b.status!=='active'?' '+b.status:'')+'">'
@@ -3144,7 +3145,18 @@ function triggerBillSync() {
           bills.length = 0;
           freshBills.forEach(function(b) {
             var saved = stateMap[b.id];
-            if (saved) { b.status = saved.status; b.sc = saved.sc; b.snoozeUntil = saved.snoozeUntil; }
+            if (saved) {
+              // Bill.com is source of truth for paid status:
+              // if it's coming back from Bill.com it's still open there — always active.
+              // Only preserve snooze state (CCC-only metadata).
+              b.status      = 'active';
+              b.sc          = saved.sc || 0;
+              b.snoozeUntil = saved.snoozeUntil || '';
+              // Re-apply snooze if still in snooze window
+              if (saved.status === 'snoozed' && saved.snoozeUntil && new Date(saved.snoozeUntil) > new Date()) {
+                b.status = 'snoozed';
+              }
+            }
             bills.push(b);
           });
 
