@@ -597,7 +597,7 @@
 
     <!-- TRIAGE PAGE -->
     <div class="page" id="page-triage">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;gap:8px"><button onclick="openImportModal('bills')" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:'DM Mono',monospace;cursor:pointer;">&#11014; Import Bill.com CSV</button><button onclick="openImportModal('ar')" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:'DM Mono',monospace;cursor:pointer;">&#11014; Import JobNimbus CSV</button><button id="bill-sync-btn-triage" onclick="triggerBillSync()" style="background:linear-gradient(135deg,#6366F1,#4F46E5);border:none;color:white;padding:7px 13px;border-radius:6px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer;display:none;">&#x21BB; Sync Bill.com API</button><button id="jn-sync-btn-triage" onclick="triggerJNSync()" style="background:linear-gradient(135deg,#06B6D4,#0891B2);border:none;color:white;padding:7px 13px;border-radius:6px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer;display:none;">&#x21BB; Sync JobNimbus API</button><span id="bill-sync-status" style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);align-self:center;display:none;"></span></div><div class="tsum" id="triage-summary"></div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;gap:8px"><button onclick="openImportModal('bills')" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:'DM Mono',monospace;cursor:pointer;">&#11014; Import Bill.com CSV</button><button id="bill-sync-btn-triage" onclick="triggerBillSync()" style="background:linear-gradient(135deg,#6366F1,#4F46E5);border:none;color:white;padding:7px 13px;border-radius:6px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer;display:none;">&#x21BB; Sync Bill.com API</button><span id="bill-sync-status" style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);align-self:center;display:none;"></span></div><div class="tsum" id="triage-summary"></div>
       <div class="ttabs">
         <div class="ttab active" onclick="switchTab('active',this)">Active Queue<span class="tc" id="tc-active">0</span></div>
         <div class="ttab" onclick="switchTab('snoozed',this)">Snoozed<span class="tc" id="tc-snoozed">0</span></div>
@@ -2813,7 +2813,8 @@ function loadFromSheets() {
       // Load full imported bills if present, else fall back to defaults + state
       var fullBills = data.fullBills || [];
       if (fullBills.length) {
-        bills = fullBills;
+        bills.length = 0;
+        fullBills.forEach(function(b) { bills.push(b); });
       } else {
         var bs = data.billsState || {};
         bills.forEach(function(b) {
@@ -2825,7 +2826,7 @@ function loadFromSheets() {
         });
       }
       maybeAutoSnapshot();
-      renderDashboard(); renderOutflow(); renderRevenue(); renderAR(); renderBacklog(); renderDebt(); renderBuffer();
+      renderDashboard(); renderOutflow(); renderRevenue(); renderAR(); renderBacklog(); renderDebt(); renderBuffer(); renderTriage();
       showSyncStatus('Loaded from Sheets', 'var(--green)');
     })
     .catch(function(err) {
