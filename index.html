@@ -417,6 +417,10 @@
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
       13-Week Forecast
     </div>
+    <div class="nav-item" onclick="navigate('paydown',this)">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+      AP Paydown Plan
+    </div>
   </div>
 
   <div class="sidebar-bottom">
@@ -896,6 +900,11 @@
       <div id="forecast13-content"></div>
     </div>
 
+    <!-- AP PAYDOWN PLAN PAGE -->
+    <div class="page" id="page-paydown">
+      <div id="paydown-content"></div>
+    </div>
+
     </div><!-- /content -->
 </div><!-- /main -->
 
@@ -972,6 +981,7 @@ const PAGES = {
   trending:      {title:'KPI Trending',                     sub:'Weekly snapshots — cash, revenue, AR & payables over time'},
   concentration: {title:'Customer Concentration Risk',      sub:'AR exposure by customer — flags over 25% concentration'},
   forecast13:    {title:'13-Week Cash Forecast',            sub:'Rolling 13-week view — confirmed + estimated cash position'},
+  paydown:       {title:'AP Paydown Plan',                  sub:'Week-by-week payoff schedule · AR collections → past-due bill assignments'},
 };
 
 function navigate(id, el) {
@@ -990,6 +1000,7 @@ function navigate(id, el) {
   if (id === 'trending') renderTrending();
   if (id === 'concentration') renderConcentration();
   if (id === 'forecast13') render13Week();
+  if (id === 'paydown') renderPaydown();
   if (id === 'ar') renderAR();
   if (id === 'triage') renderTriage();
   if (id === 'accounts') renderAccounts();
@@ -3636,7 +3647,286 @@ function render13Week() {
     +'<table><thead><tr><th>Week</th><th>Inflow</th><th>Outflow</th><th>Net</th><th>Cash Position</th><th>Status</th></tr></thead>'
     +'<tbody>'+rows+'</tbody></table></div>';
 
-  el.innerHTML = alertHtml + kpis + cashChart + table;
+  // ── SANKEY DIAGRAM ─────────────────────────────────────────────
+  // Sources (left) → Cash Pool (center) → Destinations (right)
+  var totalInflow13  = allInflow.reduce(function(s,v){return s+v;},0);
+  var totalOutflow13 = allOutflow.reduce(function(s,v){return s+v;},0);
+
+  // AR by bucket from live data
+  var arCurrent = arInvoices.filter(function(i){return i.bucket==='current';}).reduce(function(s,i){return s+i.amt;},0);
+  var ar130     = arInvoices.filter(function(i){return i.bucket==='1-30';}).reduce(function(s,i){return s+i.amt;},0);
+  var ar3160    = arInvoices.filter(function(i){return i.bucket==='31-60';}).reduce(function(s,i){return s+i.amt;},0);
+  var ar60p     = arInvoices.filter(function(i){return i.bucket==='60+';}).reduce(function(s,i){return s+i.amt;},0);
+  var arTotal   = arCurrent + ar130 + ar3160 + ar60p;
+  var pipeline  = Math.max(0, totalInflow13 - arTotal);
+
+  // Outflow breakdown over 13 weeks
+  var totalPayroll = allPay.reduce(function(s,p){return s+p;},0) * biweeklyPayroll;
+  var totalRent    = 13 * rentAmount;
+  var apTotal      = bills.filter(function(b){return b.status==='active';}).reduce(function(s,b){return s+b.amt;},0);
+  var debtTotal    = Math.max(0, totalOutflow13 - totalPayroll - totalRent - apTotal);
+
+  function buildSankey(sources, destinations, total) {
+    var SH = 260, SW = 560, COL_W = 14, MID_X = SW/2, GAP = 4;
+    var srcColors  = ['#3B82F6','#10B981','#F59E0B','#EF4444'];
+    var destColors = ['#EF4444','#F59E0B','#8B5CF6','#06B6D4','#64748B'];
+    var poolColor  = '#1E40AF';
+
+    function band(x1,y1h,x2,y2h,color,opacity){
+      var cp = (x2-x1)*0.45;
+      return '<path d="M'+x1+','+y1h.t+' C'+(x1+cp)+','+y1h.t+' '+(x2-cp)+','+y2h.t+' '+x2+','+y2h.t
+        +' L'+x2+','+y2h.b+' C'+(x2-cp)+','+y2h.b+' '+(x1+cp)+','+y1h.b+' '+x1+','+y1h.b+' Z"'
+        +' fill="'+color+'" opacity="'+(opacity||0.55)+'"/>';
+    }
+
+    var srcX = 0, midX = MID_X - COL_W/2, destX = SW - COL_W;
+    var usable = SH - GAP * (sources.length - 1);
+    var srcBands = [], srcY = 0;
+    sources.forEach(function(s,i){
+      var h = Math.max(4, Math.round(s.val/total * usable));
+      srcBands.push({y:srcY, h:h, color:srcColors[i%srcColors.length], label:s.label, val:s.val});
+      srcY += h + GAP;
+    });
+
+    var destUsable = SH - GAP * (destinations.length - 1);
+    var destBands = [], destY = 0;
+    destinations.forEach(function(d,i){
+      var h = Math.max(4, Math.round(d.val/total * destUsable));
+      destBands.push({y:destY, h:h, color:destColors[i%destColors.length], label:d.label, val:d.val});
+      destY += h + GAP;
+    });
+
+    // Center pool — full height of tallest side
+    var poolH = Math.max(srcY - GAP, destY - GAP);
+    var poolY = (SH - poolH) / 2;
+
+    var html = '<svg viewBox="-100 0 '+(SW+200)+' '+(SH+30)+'" style="width:100%;height:'+(SH+30)+'px;overflow:visible">';
+    html += '<text x="'+(midX+COL_W/2)+'" y="'+(poolY-6)+'" text-anchor="middle" fill="var(--white-faint)" font-size="8" font-family="DM Mono,monospace">CASH POOL</text>';
+    html += '<rect x="'+midX+'" y="'+poolY+'" width="'+COL_W+'" height="'+poolH+'" fill="'+poolColor+'" rx="2"/>';
+
+    // Source bars + flow bands + labels
+    var srcPoolTop = poolY, srcPoolUsed = 0;
+    srcBands.forEach(function(s){
+      html += '<rect x="'+srcX+'" y="'+s.y+'" width="'+COL_W+'" height="'+s.h+'" fill="'+s.color+'" rx="2"/>';
+      var srcMid = s.y + s.h/2;
+      var poolSlot = srcPoolTop + srcPoolUsed;
+      html += band(srcX+COL_W, {t:s.y,b:s.y+s.h}, midX, {t:poolSlot,b:poolSlot+s.h}, s.color);
+      srcPoolUsed += s.h + 1;
+      // Label left
+      html += '<text x="'+(srcX-4)+'" y="'+(s.y+s.h/2+3)+'" text-anchor="end" fill="'+s.color+'" font-size="9" font-family="DM Mono,monospace">'+s.label+'</text>';
+      html += '<text x="'+(srcX-4)+'" y="'+(s.y+s.h/2+13)+'" text-anchor="end" fill="var(--white-faint)" font-size="8" font-family="DM Mono,monospace">$'+Math.round(s.val/1000)+'k</text>';
+    });
+
+    // Destination bars + flow bands + labels
+    var destPoolTop = poolY, destPoolUsed = 0;
+    destBands.forEach(function(d){
+      html += '<rect x="'+destX+'" y="'+d.y+'" width="'+COL_W+'" height="'+d.h+'" fill="'+d.color+'" rx="2"/>';
+      var poolSlot = destPoolTop + destPoolUsed;
+      html += band(midX+COL_W, {t:poolSlot,b:poolSlot+d.h}, destX, {t:d.y,b:d.y+d.h}, d.color);
+      destPoolUsed += d.h + 1;
+      // Label right
+      html += '<text x="'+(destX+COL_W+4)+'" y="'+(d.y+d.h/2+3)+'" fill="'+d.color+'" font-size="9" font-family="DM Mono,monospace">'+d.label+'</text>';
+      html += '<text x="'+(destX+COL_W+4)+'" y="'+(d.y+d.h/2+13)+'" fill="var(--white-faint)" font-size="8" font-family="DM Mono,monospace">$'+Math.round(d.val/1000)+'k</text>';
+    });
+
+    html += '</svg>';
+    return html;
+  }
+
+  var sources = [
+    {label:'AR Current',    val: Math.max(100, arCurrent)},
+    {label:'AR 1-30d',      val: Math.max(100, ar130)},
+    {label:'AR 31-60d',     val: Math.max(100, ar3160)},
+    {label:'Pipeline',      val: Math.max(100, pipeline + ar60p)},
+  ];
+  var destinations = [
+    {label:'AP Vendors',    val: Math.max(100, apTotal)},
+    {label:'Payroll',       val: Math.max(100, totalPayroll)},
+    {label:'Rent & OH',     val: Math.max(100, totalRent)},
+    {label:'Debt Service',  val: Math.max(100, debtTotal)},
+    {label:'Net / Buffer',  val: Math.max(100, Math.abs(totalInflow13 - totalOutflow13))},
+  ];
+  var sankeyTotal = sources.reduce(function(s,x){return s+x.val;},0);
+
+  var sankeyHtml = '<div class="card mb16">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+      +'<div class="sec">13-Week Cash Flow · Sankey</div>'
+      +'<div style="font-size:9px;font-family:\'DM Mono\',monospace;color:var(--white-faint)">Sources → Pool → Destinations</div>'
+    +'</div>'
+    + buildSankey(sources, destinations, sankeyTotal)
+    +'</div>';
+
+  el.innerHTML = alertHtml + kpis + sankeyHtml + cashChart + table;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// AP PAYDOWN PLAN — week-by-week bill payoff from AR collections
+// ══════════════════════════════════════════════════════════════════
+function renderPaydown() {
+  var el = document.getElementById('paydown-content');
+  if (!el) return;
+
+  var startCash  = getLiveCash() || 187500;
+  var WEEKS      = 13;
+
+  // Build 13-week date windows (reuse existing 6, extend to 13)
+  var allStarts = [], allEnds = [], allLabels = [];
+  for (var w = 0; w < WEEKS; w++) {
+    var ws = new Date(TODAY); ws.setDate(ws.getDate() + w * 7);
+    var we = new Date(ws);    we.setDate(we.getDate() + 6);
+    allStarts.push(ws);
+    allEnds.push(we);
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    allLabels.push(months[ws.getMonth()] + ' ' + ws.getDate());
+  }
+
+  // ── AR collections bucketed by expected date ──────────────────
+  // Uses expectedDate if set, otherwise falls back to due date
+  var arByWeek = allStarts.map(function(){ return []; });
+  arInvoices.forEach(function(inv) {
+    var d = new Date(inv.expectedDate || inv.due);
+    for (var w = 0; w < WEEKS; w++) {
+      if (d >= allStarts[w] && d <= allEnds[w]) {
+        arByWeek[w].push(inv);
+        return;
+      }
+    }
+    // Past-due AR with no expected date → week 0
+    if (d < allStarts[0]) arByWeek[0].push(inv);
+  });
+
+  // ── Fixed outflows per week ───────────────────────────────────
+  var fixedByWeek = allStarts.map(function(ws, i) {
+    var isPayroll = (i % 2 === 0);
+    return rentAmount + (isPayroll ? biweeklyPayroll : 0);
+  });
+
+  // ── Past-due AP bills — copy and sort for assignment ─────────
+  // Priority: delinquent first, then critical, then by amount asc (quick wins)
+  var BILL_PRI = {delinquent:0, critical:1, urgent:2, normal:3, standard:4, deferred:5};
+  var pastDueBills = bills
+    .filter(function(b){ return b.status === 'active' && dAgo(b.due) > 0; })
+    .slice()
+    .sort(function(a, b) {
+      var pd = (BILL_PRI[a.pri]||4) - (BILL_PRI[b.pri]||4);
+      return pd !== 0 ? pd : a.amt - b.amt;
+    });
+
+  // Future AP bills bucketed by due date
+  var futureBillsByWeek = allStarts.map(function(){ return []; });
+  bills.filter(function(b){ return b.status === 'active' && dAgo(b.due) <= 0; })
+    .forEach(function(b) {
+      var d = new Date(b.due);
+      for (var w = 0; w < WEEKS; w++) {
+        if (d >= allStarts[w] && d <= allEnds[w]) {
+          futureBillsByWeek[w].push(b);
+          return;
+        }
+      }
+    });
+
+  // ── Week-by-week simulation ───────────────────────────────────
+  var remainingBills = pastDueBills.slice();
+  var cash = startCash;
+  var weekPlans = [];
+
+  for (var w = 0; w < WEEKS; w++) {
+    var arIn    = arByWeek[w].reduce(function(s,i){return s+i.amt;},0);
+    var fixed   = fixedByWeek[w];
+    var futureDue = futureBillsByWeek[w].reduce(function(s,b){return s+b.amt;},0);
+    var available = cash + arIn - fixed - futureDue;
+
+    // Assign past-due bills from available cash
+    var assigned = [];
+    var spent = 0;
+    var i = 0;
+    while (i < remainingBills.length && available - spent > 0) {
+      var b = remainingBills[i];
+      if (b.amt <= (available - spent)) {
+        assigned.push(b);
+        spent += b.amt;
+        remainingBills.splice(i, 1);
+      } else {
+        i++;
+      }
+    }
+
+    cash = available - spent;
+
+    weekPlans.push({
+      label:      allLabels[w],
+      arIn:       arIn,
+      arItems:    arByWeek[w],
+      fixed:      fixed,
+      futureDue:  futureDue,
+      available:  available,
+      assigned:   assigned,
+      spent:      spent,
+      cashEnd:    cash,
+      isPayroll:  (w % 2 === 0),
+    });
+  }
+
+  var totalPastDue   = pastDueBills.reduce(function(s,b){return s+b.amt;},0);
+  var totalAssigned  = weekPlans.reduce(function(s,p){return s+p.spent;},0);
+  var stillOwed      = remainingBills.reduce(function(s,b){return s+b.amt;},0);
+  var weeksToResolve = weekPlans.findIndex(function(p){ return remainingBills.length === 0 || p === weekPlans[weekPlans.length-1]; });
+
+  // ── KPI summary ───────────────────────────────────────────────
+  var kpis = '<div class="g4 mb16">'
+    +'<div class="card-sm"><div class="kl">Past-Due AP Total</div><div class="kv red">'+fmt(totalPastDue)+'</div><div class="ks">'+pastDueBills.length+' bills overdue</div></div>'
+    +'<div class="card-sm"><div class="kl">Plan Assigns</div><div class="kv green">'+fmt(totalAssigned)+'</div><div class="ks">Over 13 weeks</div></div>'
+    +'<div class="card-sm"><div class="kl">Still Outstanding</div><div class="kv '+(stillOwed>0?'red':'green')+'">'+fmt(stillOwed)+'</div><div class="ks">'+(stillOwed>0?remainingBills.length+' bills remain':'All cleared!')+' </div></div>'
+    +'<div class="card-sm"><div class="kl">Starting Cash</div><div class="kv accent">'+fmt(startCash)+'</div><div class="ks">From account balances</div></div>'
+    +'</div>';
+
+  var alert = stillOwed > 0
+    ? '<div class="alert r mb16"><div class="alert-icon">⚠️</div><div><div class="alert-title">'+remainingBills.length+' past-due bills ('+fmt(stillOwed)+') cannot be cleared in 13 weeks</div><div class="alert-body">AR collections are insufficient to cover all past-due AP. Consider accelerating collections on 60+ day invoices or negotiating payment plans with key vendors.</div></div></div>'
+    : '<div class="alert g mb16"><div class="alert-icon">✓</div><div><div class="alert-title">All past-due bills can be cleared within 13 weeks based on expected AR</div><div class="alert-body">Plan assigns '+fmt(totalAssigned)+' across the forecast window. Actual timing depends on AR collection accuracy.</div></div></div>';
+
+  var note = '<div class="alert ac mb16"><div class="alert-icon">ℹ️</div><div><div class="alert-body">Bills are assigned in order: delinquent first, then critical, then by amount low→high (quick wins). AR uses <b>Expected Date</b> when set, otherwise falls back to invoice due date. Set expected dates on the AR Aging page for best accuracy.</div></div></div>';
+
+  // ── Week rows ──────────────────────────────────────────────────
+  var weekRows = weekPlans.map(function(p, wi) {
+    var cashColor = p.cashEnd >= 150000 ? 'g' : p.cashEnd >= 75000 ? 'a' : 'r';
+    var arList = p.arItems.length
+      ? p.arItems.map(function(i){ return '<div style="font-size:9px;color:var(--green);font-family:\'DM Mono\',monospace">+ '+i.client+' '+fmt(i.amt)+'</div>'; }).join('')
+      : '<div style="font-size:9px;color:var(--white-faint);font-family:\'DM Mono\',monospace">No collections expected</div>';
+    var billList = p.assigned.length
+      ? p.assigned.map(function(b){ return '<div style="font-size:9px;color:var(--amber);font-family:\'DM Mono\',monospace">→ '+b.vendor.substring(0,22)+' '+fmt(b.amt)+'</div>'; }).join('')
+      : '<div style="font-size:9px;color:var(--white-faint);font-family:\'DM Mono\',monospace">No past-due bills assigned</div>';
+
+    return '<tr>'
+      +'<td class="b">'+p.label+(p.isPayroll?' ✦':'')+'</td>'
+      +'<td style="vertical-align:top">'+arList+'</td>'
+      +'<td class="m">'+fmt(p.arIn)+'</td>'
+      +'<td class="m">'+fmt(p.fixed + p.futureDue)+'</td>'
+      +'<td style="vertical-align:top">'+billList+'</td>'
+      +'<td class="'+(p.spent>0?'a':'m')+'">'+fmt(p.spent)+'</td>'
+      +'<td class="'+cashColor+'">'+fmt(Math.round(p.cashEnd))+'</td>'
+      +'</tr>';
+  }).join('');
+
+  var table = '<div class="card"><div class="sec">Week-by-Week Paydown Schedule &nbsp;<span style="font-size:9px;font-family:\'DM Mono\',monospace;color:var(--white-faint)">✦ = payroll week</span></div>'
+    +'<table><thead><tr>'
+    +'<th>Week</th><th>AR Collections</th><th>Cash In</th><th>Fixed + Due</th><th>Bills Assigned</th><th>Paid</th><th>Cash End</th>'
+    +'</tr></thead><tbody>'+weekRows+'</tbody></table></div>';
+
+  // ── Remaining bills not assigned ──────────────────────────────
+  var remainHtml = '';
+  if (remainingBills.length > 0) {
+    var rRows = remainingBills.map(function(b) {
+      return '<tr><td class="b">'+b.vendor+'</td><td class="m">'+b.inv+'</td>'
+        +'<td class="r">'+dAgo(b.due)+'d overdue</td>'
+        +'<td class="r">'+fmt(b.amt)+'</td>'
+        +'<td><span class="pill '+(b.pri==='delinquent'?'a':'r')+'">'+b.pri.toUpperCase()+'</span></td></tr>';
+    }).join('');
+    remainHtml = '<div class="card mt16"><div class="sec" style="color:var(--red)">⚠ Unresolved After 13 Weeks — '+remainingBills.length+' bills · '+fmt(stillOwed)+'</div>'
+      +'<table><thead><tr><th>Vendor</th><th>Invoice</th><th>Age</th><th>Amount</th><th>Priority</th></tr></thead>'
+      +'<tbody>'+rRows+'</tbody></table></div>';
+  }
+
+  el.innerHTML = alert + note + kpis + table + remainHtml;
 }
 
 // ══════════════════════════════════════════════════════════════════
