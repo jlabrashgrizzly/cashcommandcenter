@@ -202,6 +202,29 @@
   .be-input{background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:8px 11px;border-radius:6px;font-size:13px;font-family:'DM Mono',monospace;width:100%;outline:none;transition:border-color 0.15s;}
   .be-input:focus{border-color:var(--accent);}
   .be-result-big{font-size:36px;font-weight:800;line-height:1;margin:8px 0 4px;}
+
+  /* OVERHEAD CALCULATOR */
+  .oh-section{margin-bottom:18px;}
+  .oh-section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .oh-section-title{font-size:11px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;font-family:'DM Mono',monospace;color:var(--white-faint);}
+  .oh-add-btn{display:flex;align-items:center;gap:5px;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white-dim);font-size:11px;font-family:'DM Mono',monospace;padding:5px 10px;border-radius:5px;cursor:pointer;transition:all 0.15s;}
+  .oh-add-btn:hover{background:var(--navy-4);color:var(--white);border-color:var(--accent);}
+  .oh-row{display:grid;grid-template-columns:1fr 140px 36px;gap:8px;align-items:center;margin-bottom:6px;}
+  .oh-row.labor{grid-template-columns:1fr 120px 100px 36px;}
+  .oh-input{background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:7px 10px;border-radius:5px;font-size:13px;font-family:'DM Mono',monospace;width:100%;outline:none;transition:border-color 0.15s;}
+  .oh-input:focus{border-color:var(--accent);}
+  .oh-input.name{font-family:'Syne',sans-serif;font-size:13px;}
+  .oh-del-btn{background:transparent;border:1px solid var(--border);color:var(--red);width:32px;height:32px;border-radius:5px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;}
+  .oh-del-btn:hover{background:var(--red-dim);border-color:var(--red);}
+  .oh-subtotal{display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:8px 0 0;border-top:1px solid var(--border);margin-top:4px;}
+  .oh-subtotal-lbl{font-size:11px;font-family:'DM Mono',monospace;color:var(--white-faint);}
+  .oh-subtotal-val{font-size:15px;font-weight:700;font-family:'DM Mono',monospace;}
+  .oh-profit-row{display:flex;align-items:baseline;gap:10px;margin-bottom:6px;}
+  .oh-profit-lbl{font-size:12px;color:var(--white-faint);font-family:'DM Mono',monospace;width:210px;flex-shrink:0;}
+  .oh-profit-val{font-size:18px;font-weight:700;font-family:'DM Mono',monospace;}
+  .oh-profit-bar-wrap{height:8px;background:var(--navy-5);border-radius:4px;overflow:hidden;margin-bottom:14px;}
+  .oh-profit-bar{height:100%;border-radius:4px;transition:width 0.3s;}
+  .oh-grand-total{font-size:42px;font-weight:800;line-height:1;}
   .meter-bar{height:10px;background:var(--navy-5);border-radius:20px;overflow:hidden;margin-top:6px;position:relative;}
   .meter-fill{height:100%;border-radius:20px;transition:width 0.5s ease;}
   .meter-marker{position:absolute;top:-3px;height:16px;width:2px;background:var(--white);border-radius:1px;}
@@ -390,6 +413,10 @@
     <div class="nav-item" onclick="navigate('breakeven',this)">
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
       Break-Even
+    </div>
+    <div class="nav-item" onclick="navigate('overhead',this)">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+      Overhead Calc
     </div>
   </div>
 
@@ -694,6 +721,123 @@
       </div>
     </div>
 
+    <!-- OVERHEAD & PROFIT CALCULATOR PAGE -->
+    <div class="page" id="page-overhead">
+      <div class="g2 mb20" style="align-items:start;gap:18px">
+
+        <!-- LEFT COLUMN: Line Item Inputs -->
+        <div>
+
+          <!-- OVERHEAD COSTS -->
+          <div class="card mb14">
+            <div class="oh-section">
+              <div class="oh-section-hdr">
+                <div class="oh-section-title" style="color:var(--amber)">▸ Overhead Costs</div>
+                <button class="oh-add-btn" onclick="ohAddRow('overhead')">+ Add Item</button>
+              </div>
+              <div id="oh-overhead-rows"></div>
+              <div class="oh-subtotal">
+                <span class="oh-subtotal-lbl">Overhead Subtotal</span>
+                <span class="oh-subtotal-val" style="color:var(--amber)" id="oh-overhead-sub">$0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- LABOR COSTS -->
+          <div class="card mb14">
+            <div class="oh-section">
+              <div class="oh-section-hdr">
+                <div class="oh-section-title" style="color:var(--purple)">▸ Overhead Labor Costs</div>
+                <button class="oh-add-btn" onclick="ohAddRow('labor')">+ Add Person</button>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 120px 100px 36px;gap:8px;margin-bottom:6px;">
+                <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);">Name / Role</div>
+                <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);">Monthly Pay ($)</div>
+                <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);">Burden (%)</div>
+                <div></div>
+              </div>
+              <div id="oh-labor-rows"></div>
+              <div class="oh-subtotal">
+                <span class="oh-subtotal-lbl">Labor Subtotal (w/ burden)</span>
+                <span class="oh-subtotal-val" style="color:var(--purple)" id="oh-labor-sub">$0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- DEBT SERVICE -->
+          <div class="card">
+            <div class="oh-section" style="margin-bottom:0">
+              <div class="oh-section-hdr">
+                <div class="oh-section-title" style="color:var(--red)">▸ Debt Service</div>
+                <button class="oh-add-btn" onclick="ohAddRow('debt')">+ Add Obligation</button>
+              </div>
+              <div id="oh-debt-rows"></div>
+              <div class="oh-subtotal">
+                <span class="oh-subtotal-lbl">Debt Service Subtotal</span>
+                <span class="oh-subtotal-val" style="color:var(--red)" id="oh-debt-sub">$0</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: Outputs -->
+        <div>
+
+          <!-- COST SUMMARY -->
+          <div class="card mb14">
+            <div class="sec">Monthly Cost Summary</div>
+            <div class="g3 mb14" style="gap:10px">
+              <div class="card-sm">
+                <div class="kl">Overhead</div>
+                <div class="kv amber" style="font-size:22px" id="oh-out-overhead">$0</div>
+                <div class="ks" id="oh-out-overhead-pct">— of total costs</div>
+              </div>
+              <div class="card-sm">
+                <div class="kl">Labor</div>
+                <div class="kv" style="font-size:22px;color:var(--purple)" id="oh-out-labor">$0</div>
+                <div class="ks" id="oh-out-labor-pct">— of total costs</div>
+              </div>
+              <div class="card-sm">
+                <div class="kl">Debt Service</div>
+                <div class="kv red" style="font-size:22px" id="oh-out-debt">$0</div>
+                <div class="ks" id="oh-out-debt-pct">— of total costs</div>
+              </div>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:14px">
+              <div class="kl">Total Monthly Fixed Costs</div>
+              <div class="oh-grand-total" id="oh-total-costs" style="color:var(--white)">$0</div>
+              <div class="ks mt8" id="oh-weekly-equiv">Weekly equivalent: —</div>
+            </div>
+          </div>
+
+          <!-- NET PROFIT CALCULATOR -->
+          <div class="card" id="oh-profit-card">
+            <div class="sec">Net Profit Calculator</div>
+
+            <div class="oh-section" style="margin-bottom:14px">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+                <div>
+                  <div class="oh-input-lbl" style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-dim);margin-bottom:4px;">Est. Monthly Revenue ($)</div>
+                  <input type="number" class="oh-input" id="oh-rev" value="485000" oninput="ohCalcProfit()" placeholder="Monthly Revenue"/>
+                </div>
+                <div>
+                  <div class="oh-input-lbl" style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-dim);margin-bottom:4px;">Cost of Goods (COGS) %</div>
+                  <input type="number" class="oh-input" id="oh-cogs" value="63" min="0" max="100" oninput="ohCalcProfit()" placeholder="e.g. 63"/>
+                </div>
+              </div>
+              <div style="background:var(--navy-5);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:11px;font-family:'DM Mono',monospace;color:var(--white-faint);">
+                COGS = materials + direct job labor (field/fab). Overhead labor entered above is <em style="color:var(--white-dim)">not</em> COGS — it's already in your fixed costs.
+              </div>
+            </div>
+
+            <div id="oh-profit-output"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
     <!-- PAYROLL TAX PAGE -->
     <div class="page" id="page-payrolltax">
       <div class="alert r"><div class="alert-icon">🚨</div><div><div class="alert-title">2 payroll tax deposits due within 7 days — personal liability risk if missed</div><div class="alert-body">941 deposits carry personal liability for business owners. IRS penalties start at 2% and escalate to 15%+ for deposits more than 16 days late.</div></div></div>
@@ -976,6 +1120,7 @@ const PAGES = {
   buffer:     {title:'Buffer Builder',                sub:'Progress toward 1-month expense target ($197,400)'},
   debt:       {title:'Debt & Credit Dashboard',       sub:'Term loans, line of credit & credit cards'},
   breakeven:  {title:'Break-Even & Overhead Calculator', sub:'Fixed costs, margin analysis & hiring impact'},
+  overhead:   {title:'Overhead & Profit Calculator',     sub:'Line-item overhead, labor & debt service → monthly net profit'},
   payrolltax: {title:'Payroll Tax Obligations',       sub:'941 deposits, FUTA/SUTA deadlines · personal liability risk if missed'},
   ownertax:      {title:'Owner Draws & Tax Reserve',        sub:'Estimated tax calendar, reserve tracker & safe draw amount'},
   trending:      {title:'KPI Trending',                     sub:'Weekly snapshots — cash, revenue, AR & payables over time'},
@@ -1005,6 +1150,7 @@ function navigate(id, el) {
   if (id === 'triage') renderTriage();
   if (id === 'accounts') renderAccounts();
   if (id === 'breakeven') calcBreakEven();
+  if (id === 'overhead') renderOverhead();
   if (id === 'vendors') renderVendors();
 }
 
@@ -1386,6 +1532,193 @@ function calcBreakEven(){
     '<div class="kl">Weekly True Cost of New Hire</div><div class="kv accent" style="font-size:20px">'+fmt(Math.round(hireTotalWeekly))+'</div>'+
     '<div class="ks" style="margin-top:4px">Additional revenue required per week: <strong style="color:var(--amber)">'+fmt(Math.round(revenueNeededForHire))+'</strong></div>'+
     '<div class="ks">Monthly revenue needed: <strong style="color:var(--amber)">'+fmt(Math.round(revenueNeededForHire*4.33))+'</strong></div>';
+}
+
+// ── OVERHEAD & PROFIT CALCULATOR ────────────────────────────────
+var ohData = {
+  overhead: [],
+  labor: [],
+  debt: []
+};
+
+var OH_KEY = 'ccc_overhead_data';
+
+function ohLoad() {
+  try {
+    var stored = JSON.parse(localStorage.getItem(OH_KEY));
+    if (stored && stored.overhead) {
+      ohData = stored;
+    } else {
+      // Default seed data
+      ohData = {
+        overhead: [
+          { name: 'Rent / Facility', amount: 8500 },
+          { name: 'Electricity & Gas', amount: 1200 },
+          { name: 'Internet & Phone', amount: 350 },
+          { name: 'Software / Subscriptions', amount: 620 },
+          { name: 'Insurance (General)', amount: 1800 },
+          { name: 'Vehicle / Equipment Lease', amount: 2400 }
+        ],
+        labor: [
+          { name: 'Office Manager', pay: 5200, burden: 22 },
+          { name: 'Estimator', pay: 6500, burden: 22 }
+        ],
+        debt: [
+          { name: 'Equipment Loan (Ironworker)', amount: 3800 },
+          { name: 'Business Line of Credit', amount: 2100 },
+          { name: 'Vehicle Loan', amount: 1450 }
+        ]
+      };
+    }
+  } catch(e) { /* use defaults */ }
+}
+
+function ohSave() {
+  try { localStorage.setItem(OH_KEY, JSON.stringify(ohData)); } catch(e) {}
+}
+
+function ohFmt(n) {
+  return '$' + Math.round(n).toLocaleString();
+}
+
+function ohAddRow(section) {
+  if (section === 'labor') {
+    ohData.labor.push({ name: '', pay: 0, burden: 22 });
+  } else if (section === 'overhead') {
+    ohData.overhead.push({ name: '', amount: 0 });
+  } else {
+    ohData.debt.push({ name: '', amount: 0 });
+  }
+  ohSave();
+  ohRenderSection(section);
+  ohCalcAll();
+}
+
+function ohDeleteRow(section, idx) {
+  ohData[section].splice(idx, 1);
+  ohSave();
+  ohRenderSection(section);
+  ohCalcAll();
+}
+
+function ohUpdateField(section, idx, field, val) {
+  var v = parseFloat(val);
+  ohData[section][idx][field] = isNaN(v) ? val : v;
+  ohSave();
+  ohCalcAll();
+}
+
+function ohRenderSection(section) {
+  var container = document.getElementById('oh-' + section + '-rows');
+  if (!container) return;
+  var html = '';
+  if (section === 'labor') {
+    ohData.labor.forEach(function(row, i) {
+      html += '<div class="oh-row labor" style="margin-bottom:6px">'
+        + '<input class="oh-input name" placeholder="Name / Role" value="' + (row.name||'').replace(/"/g,'&quot;') + '" oninput="ohUpdateField(\'labor\',' + i + ',\'name\',this.value)"/>'
+        + '<input class="oh-input" type="number" placeholder="0" value="' + (row.pay||'') + '" oninput="ohUpdateField(\'labor\',' + i + ',\'pay\',this.value)"/>'
+        + '<input class="oh-input" type="number" placeholder="22" value="' + (row.burden||22) + '" oninput="ohUpdateField(\'labor\',' + i + ',\'burden\',this.value)"/>'
+        + '<button class="oh-del-btn" onclick="ohDeleteRow(\'labor\',' + i + ')">×</button>'
+        + '</div>';
+    });
+  } else {
+    var rows = ohData[section];
+    rows.forEach(function(row, i) {
+      html += '<div class="oh-row" style="margin-bottom:6px">'
+        + '<input class="oh-input name" placeholder="Description" value="' + (row.name||'').replace(/"/g,'&quot;') + '" oninput="ohUpdateField(\'' + section + '\',' + i + ',\'name\',this.value)"/>'
+        + '<input class="oh-input" type="number" placeholder="0" value="' + (row.amount||'') + '" oninput="ohUpdateField(\'' + section + '\',' + i + ',\'amount\',this.value)"/>'
+        + '<button class="oh-del-btn" onclick="ohDeleteRow(\'' + section + '\',' + i + ')">×</button>'
+        + '</div>';
+    });
+  }
+  container.innerHTML = html;
+}
+
+function ohCalcAll() {
+  // Overhead subtotal
+  var ohSub = ohData.overhead.reduce(function(s,r){ return s + (parseFloat(r.amount)||0); }, 0);
+  // Labor subtotal (with burden)
+  var lbSub = ohData.labor.reduce(function(s,r){ return s + (parseFloat(r.pay)||0) * (1 + (parseFloat(r.burden)||0)/100); }, 0);
+  // Debt subtotal
+  var dbSub = ohData.debt.reduce(function(s,r){ return s + (parseFloat(r.amount)||0); }, 0);
+  var total = ohSub + lbSub + dbSub;
+
+  // Update subtotals
+  var ohs = document.getElementById('oh-overhead-sub');
+  var lbs = document.getElementById('oh-labor-sub');
+  var dbs = document.getElementById('oh-debt-sub');
+  if (ohs) ohs.textContent = ohFmt(ohSub);
+  if (lbs) lbs.textContent = ohFmt(lbSub);
+  if (dbs) dbs.textContent = ohFmt(dbSub);
+
+  // Update summary cards
+  var pct = function(v){ return total > 0 ? Math.round(v/total*100) + '% of total costs' : '—'; };
+  var e = function(id){ return document.getElementById(id); };
+  if (e('oh-out-overhead')) e('oh-out-overhead').textContent = ohFmt(ohSub);
+  if (e('oh-out-overhead-pct')) e('oh-out-overhead-pct').textContent = pct(ohSub);
+  if (e('oh-out-labor')) e('oh-out-labor').textContent = ohFmt(lbSub);
+  if (e('oh-out-labor-pct')) e('oh-out-labor-pct').textContent = pct(lbSub);
+  if (e('oh-out-debt')) e('oh-out-debt').textContent = ohFmt(dbSub);
+  if (e('oh-out-debt-pct')) e('oh-out-debt-pct').textContent = pct(dbSub);
+  if (e('oh-total-costs')) e('oh-total-costs').textContent = ohFmt(total);
+  if (e('oh-weekly-equiv')) e('oh-weekly-equiv').textContent = 'Weekly equivalent: ' + ohFmt(total / 4.33);
+
+  ohCalcProfit();
+}
+
+function ohCalcProfit() {
+  var rev = parseFloat((document.getElementById('oh-rev')||{}).value) || 0;
+  var cogsPct = parseFloat((document.getElementById('oh-cogs')||{}).value) || 0;
+
+  var ohSub = ohData.overhead.reduce(function(s,r){ return s + (parseFloat(r.amount)||0); }, 0);
+  var lbSub = ohData.labor.reduce(function(s,r){ return s + (parseFloat(r.pay)||0) * (1 + (parseFloat(r.burden)||0)/100); }, 0);
+  var dbSub = ohData.debt.reduce(function(s,r){ return s + (parseFloat(r.amount)||0); }, 0);
+  var totalFixed = ohSub + lbSub + dbSub;
+
+  var cogs = rev * (cogsPct / 100);
+  var grossProfit = rev - cogs;
+  var grossMarginPct = rev > 0 ? (grossProfit / rev * 100) : 0;
+  var netProfit = grossProfit - totalFixed;
+  var netMarginPct = rev > 0 ? (netProfit / rev * 100) : 0;
+
+  var out = document.getElementById('oh-profit-output');
+  if (!out) return;
+
+  var barGross = rev > 0 ? Math.min(100, Math.round(grossProfit / rev * 100)) : 0;
+  var barNet = rev > 0 ? Math.min(100, Math.max(0, Math.round(netProfit / rev * 100))) : 0;
+  var netColor = netProfit >= 0 ? 'var(--green)' : 'var(--red)';
+  var netStatus = netProfit >= 0
+    ? (netMarginPct >= 15 ? '🟢 Strong margin' : netMarginPct >= 8 ? '🟡 Acceptable margin' : '🟡 Thin margin — consider pricing or cost review')
+    : '🔴 Loss — revenue below total cost structure';
+
+  out.innerHTML =
+    '<div style="margin-bottom:14px">' +
+      '<div class="oh-profit-row"><span class="oh-profit-lbl">Revenue</span><span class="oh-profit-val" style="color:var(--accent)">' + ohFmt(rev) + '</span></div>' +
+      '<div class="oh-profit-row"><span class="oh-profit-lbl">COGS (' + Math.round(cogsPct) + '%)</span><span class="oh-profit-val" style="color:var(--white-dim)">− ' + ohFmt(cogs) + '</span></div>' +
+      '<div style="border-top:1px solid var(--border);margin:6px 0"></div>' +
+      '<div class="oh-profit-row"><span class="oh-profit-lbl">Gross Profit (' + Math.round(grossMarginPct) + '%)</span><span class="oh-profit-val" style="color:var(--accent)">' + ohFmt(grossProfit) + '</span></div>' +
+      '<div class="oh-profit-bar-wrap"><div class="oh-profit-bar" style="width:' + barGross + '%;background:var(--accent)"></div></div>' +
+      '<div class="oh-profit-row"><span class="oh-profit-lbl">Total Fixed Costs</span><span class="oh-profit-val" style="color:var(--white-dim)">− ' + ohFmt(totalFixed) + '</span></div>' +
+      '<div style="border-top:1px solid var(--border);margin:6px 0"></div>' +
+      '<div class="oh-profit-row"><span class="oh-profit-lbl">Net Profit (' + Math.round(netMarginPct) + '% margin)</span><span class="oh-profit-val" style="color:' + netColor + '">' + ohFmt(netProfit) + '</span></div>' +
+      '<div class="oh-profit-bar-wrap"><div class="oh-profit-bar" style="width:' + barNet + '%;background:' + netColor + '"></div></div>' +
+    '</div>' +
+    '<div class="card-sm" style="background:' + (netProfit>=0 ? 'var(--green-dim)' : 'var(--red-dim)') + ';border-color:' + netColor + '">' +
+      '<div style="font-size:12px;color:' + netColor + ';font-family:\'DM Mono\',monospace;margin-bottom:4px">' + netStatus + '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">' +
+        '<div><div class="kl">Break-Even Revenue</div><div style="font-size:14px;font-weight:700;font-family:\'DM Mono\',monospace;color:var(--amber)">' + (grossMarginPct > 0 ? ohFmt(totalFixed / (grossMarginPct/100)) : '—') + '</div></div>' +
+        '<div><div class="kl">$ Above Break-Even</div><div style="font-size:14px;font-weight:700;font-family:\'DM Mono\',monospace;color:' + netColor + '">' + (netProfit >= 0 ? '+' : '') + ohFmt(netProfit) + '</div></div>' +
+        '<div><div class="kl">Weekly Net Profit</div><div style="font-size:14px;font-weight:700;font-family:\'DM Mono\',monospace;color:' + netColor + '">' + ohFmt(netProfit / 4.33) + '</div></div>' +
+      '</div>' +
+    '</div>';
+}
+
+function renderOverhead() {
+  ohLoad();
+  ohRenderSection('overhead');
+  ohRenderSection('labor');
+  ohRenderSection('debt');
+  ohCalcAll();
 }
 
 // ── WHAT-IF SIMULATOR ────────────────────────────────────────────
