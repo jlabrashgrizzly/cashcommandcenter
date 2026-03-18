@@ -209,13 +209,19 @@
   .oh-section-title{font-size:11px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;font-family:'DM Mono',monospace;color:var(--white-faint);}
   .oh-add-btn{display:flex;align-items:center;gap:5px;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white-dim);font-size:11px;font-family:'DM Mono',monospace;padding:5px 10px;border-radius:5px;cursor:pointer;transition:all 0.15s;}
   .oh-add-btn:hover{background:var(--navy-4);color:var(--white);border-color:var(--accent);}
-  .oh-row{display:grid;grid-template-columns:1fr 140px 36px;gap:8px;align-items:center;margin-bottom:6px;}
-  .oh-row.labor{grid-template-columns:1fr 120px 100px 36px;}
+  .oh-row{display:grid;grid-template-columns:20px 1fr 140px 36px;gap:8px;align-items:center;margin-bottom:6px;}
+  .oh-row.labor{grid-template-columns:20px 1fr 120px 100px 36px;}
   .oh-input{background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:7px 10px;border-radius:5px;font-size:13px;font-family:'DM Mono',monospace;width:100%;outline:none;transition:border-color 0.15s;}
   .oh-input:focus{border-color:var(--accent);}
   .oh-input.name{font-family:'Syne',sans-serif;font-size:13px;}
   .oh-del-btn{background:transparent;border:1px solid var(--border);color:var(--red);width:32px;height:32px;border-radius:5px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;}
   .oh-del-btn:hover{background:var(--red-dim);border-color:var(--red);}
+  .oh-drag-handle{width:20px;height:32px;display:flex;align-items:center;justify-content:center;cursor:grab;color:var(--white-faint);flex-shrink:0;border-radius:4px;transition:color 0.15s;}
+  .oh-drag-handle:hover{color:var(--white-dim);}
+  .oh-drag-handle:active{cursor:grabbing;}
+  .oh-drag-handle svg{pointer-events:none;}
+  .oh-row.dragging{opacity:0.35;}
+  .oh-row.drag-over{outline:2px solid var(--accent);outline-offset:1px;border-radius:5px;}
   .oh-subtotal{display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:8px 0 0;border-top:1px solid var(--border);margin-top:4px;}
   .oh-subtotal-lbl{font-size:11px;font-family:'DM Mono',monospace;color:var(--white-faint);}
   .oh-subtotal-val{font-size:15px;font-weight:700;font-family:'DM Mono',monospace;}
@@ -750,7 +756,8 @@
                 <div class="oh-section-title" style="color:var(--purple)">▸ Overhead Labor Costs</div>
                 <button class="oh-add-btn" onclick="ohAddRow('labor')">+ Add Person</button>
               </div>
-              <div style="display:grid;grid-template-columns:1fr 120px 100px 36px;gap:8px;margin-bottom:6px;">
+              <div style="display:grid;grid-template-columns:20px 1fr 120px 100px 36px;gap:8px;margin-bottom:6px;">
+                <div></div>
                 <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);">Name / Role</div>
                 <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);">Monthly Pay ($)</div>
                 <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);">Burden (%)</div>
@@ -1575,6 +1582,14 @@ function ohLoad() {
 
 function ohSave() {
   try { localStorage.setItem(OH_KEY, JSON.stringify(ohData)); } catch(e) {}
+  // Sync to Sheets (fire-and-forget, same pattern as buffer/liabilities)
+  if (SHEETS_URL) {
+    fetch(SHEETS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify({ type: 'overhead', overhead: ohData })
+    }).catch(function(){});
+  }
 }
 
 function ohFmt(n) {
@@ -1608,30 +1623,75 @@ function ohUpdateField(section, idx, field, val) {
   ohCalcAll();
 }
 
+var OH_DRAG = { section: null, fromIdx: null };
+
+var OH_HANDLE_SVG = '<svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="3" cy="3" r="1.5"/><circle cx="9" cy="3" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="9" cy="8" r="1.5"/><circle cx="3" cy="13" r="1.5"/><circle cx="9" cy="13" r="1.5"/></svg>';
+
 function ohRenderSection(section) {
   var container = document.getElementById('oh-' + section + '-rows');
   if (!container) return;
   var html = '';
   if (section === 'labor') {
     ohData.labor.forEach(function(row, i) {
-      html += '<div class="oh-row labor" style="margin-bottom:6px">'
-        + '<input class="oh-input name" placeholder="Name / Role" value="' + (row.name||'').replace(/"/g,'&quot;') + '" oninput="ohUpdateField(\'labor\',' + i + ',\'name\',this.value)"/>'
-        + '<input class="oh-input" type="number" placeholder="0" value="' + (row.pay||'') + '" oninput="ohUpdateField(\'labor\',' + i + ',\'pay\',this.value)"/>'
-        + '<input class="oh-input" type="number" placeholder="22" value="' + (row.burden||22) + '" oninput="ohUpdateField(\'labor\',' + i + ',\'burden\',this.value)"/>'
-        + '<button class="oh-del-btn" onclick="ohDeleteRow(\'labor\',' + i + ')">×</button>'
+      html += '<div class="oh-row labor" draggable="true" data-section="labor" data-idx="' + i + '" style="margin-bottom:6px">'
+        + '<div class="oh-drag-handle" title="Drag to reorder">' + OH_HANDLE_SVG + '</div>'
+        + '<input class="oh-input name" placeholder="Name / Role" value="' + (row.name||'').replace(/"/g,'&quot;') + '" oninput="ohUpdateField(\x27labor\x27,' + i + ',\x27name\x27,this.value)"/>'
+        + '<input class="oh-input" type="number" placeholder="0" value="' + (row.pay||'') + '" oninput="ohUpdateField(\x27labor\x27,' + i + ',\x27pay\x27,this.value)"/>'
+        + '<input class="oh-input" type="number" placeholder="22" value="' + (row.burden||22) + '" oninput="ohUpdateField(\x27labor\x27,' + i + ',\x27burden\x27,this.value)"/>'
+        + '<button class="oh-del-btn" onclick="ohDeleteRow(\x27labor\x27,' + i + ')">×</button>'
         + '</div>';
     });
   } else {
     var rows = ohData[section];
     rows.forEach(function(row, i) {
-      html += '<div class="oh-row" style="margin-bottom:6px">'
-        + '<input class="oh-input name" placeholder="Description" value="' + (row.name||'').replace(/"/g,'&quot;') + '" oninput="ohUpdateField(\'' + section + '\',' + i + ',\'name\',this.value)"/>'
-        + '<input class="oh-input" type="number" placeholder="0" value="' + (row.amount||'') + '" oninput="ohUpdateField(\'' + section + '\',' + i + ',\'amount\',this.value)"/>'
-        + '<button class="oh-del-btn" onclick="ohDeleteRow(\'' + section + '\',' + i + ')">×</button>'
+      html += '<div class="oh-row" draggable="true" data-section="' + section + '" data-idx="' + i + '" style="margin-bottom:6px">'
+        + '<div class="oh-drag-handle" title="Drag to reorder">' + OH_HANDLE_SVG + '</div>'
+        + '<input class="oh-input name" placeholder="Description" value="' + (row.name||'').replace(/"/g,'&quot;') + '" oninput="ohUpdateField(\x27' + section + '\x27,' + i + ',\x27name\x27,this.value)"/>'
+        + '<input class="oh-input" type="number" placeholder="0" value="' + (row.amount||'') + '" oninput="ohUpdateField(\x27' + section + '\x27,' + i + ',\x27amount\x27,this.value)"/>'
+        + '<button class="oh-del-btn" onclick="ohDeleteRow(\x27' + section + '\x27,' + i + ')">×</button>'
         + '</div>';
     });
   }
   container.innerHTML = html;
+  ohBindDrag(container, section);
+}
+
+function ohBindDrag(container, section) {
+  var rows = container.querySelectorAll('[draggable="true"]');
+  rows.forEach(function(row) {
+    row.addEventListener('dragstart', function(e) {
+      OH_DRAG.section  = section;
+      OH_DRAG.fromIdx  = parseInt(row.dataset.idx);
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    row.addEventListener('dragend', function() {
+      row.classList.remove('dragging');
+      container.querySelectorAll('.oh-row').forEach(function(r){ r.classList.remove('drag-over'); });
+    });
+    row.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      container.querySelectorAll('.oh-row').forEach(function(r){ r.classList.remove('drag-over'); });
+      row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave', function() {
+      row.classList.remove('drag-over');
+    });
+    row.addEventListener('drop', function(e) {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      var toIdx = parseInt(row.dataset.idx);
+      if (OH_DRAG.section !== section || OH_DRAG.fromIdx === null || OH_DRAG.fromIdx === toIdx) return;
+      var arr = ohData[section];
+      var moved = arr.splice(OH_DRAG.fromIdx, 1)[0];
+      arr.splice(toIdx, 0, moved);
+      OH_DRAG.fromIdx = null;
+      ohSave();
+      ohRenderSection(section);
+      ohCalcAll();
+    });
+  });
 }
 
 function ohCalcAll() {
@@ -3218,6 +3278,12 @@ function loadFromSheets() {
         if (bd && typeof bd === 'object' && !Array.isArray(bd) && 'current' in bd) {
           bufferData = bd;
         }
+      }
+      // Load overhead data from Sheets (overrides localStorage)
+      var od = data.overhead;
+      if (od && typeof od === 'object' && !Array.isArray(od) && od.overhead) {
+        ohData = od;
+        try { localStorage.setItem(OH_KEY, JSON.stringify(ohData)); } catch(e) {}
       }
       // Load full imported bills if present, else fall back to defaults + state
       var fullBills = data.fullBills || [];
