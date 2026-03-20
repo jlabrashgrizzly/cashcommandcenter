@@ -61,6 +61,7 @@
   .card{background:var(--navy-2);border:1px solid var(--border);border-radius:11px;padding:20px 22px;}
   .card-sm{background:var(--navy-3);border:1px solid var(--border);border-radius:9px;padding:14px 16px;}
   .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .g5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
   .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
   .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   .sec{font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--white-faint);font-family:'DM Mono',monospace;margin-bottom:13px;}
@@ -2737,6 +2738,20 @@ function renderAR() {
   }, 0);
   var avgDays = arInvoices.length > 0 ? Math.round(totalDaysOut / arInvoices.length) : 0;
 
+  // ── Expected in Next 30 Days ──────────────────────────────────────
+  // Uses expectedDate if set on the invoice, otherwise falls back to due date
+  var n30Start = new Date(TODAY); n30Start.setHours(0,0,0,0);
+  var n30End   = new Date(n30Start); n30End.setDate(n30End.getDate() + 30);
+  var next30Amt   = 0;
+  var next30Count = 0;
+  arInvoices.forEach(function(inv) {
+    var rawDate = inv.expectedDate || inv.due;
+    if (!rawDate) return;
+    var d = new Date(rawDate + 'T12:00:00');
+    if (d >= n30Start && d <= n30End) { next30Amt += (inv.amt || 0); next30Count++; }
+  });
+  var hasExpectedDates = arInvoices.some(function(i){ return !!i.expectedDate; });
+
   // All-invoices table — sortable, built by global buildARRows()/arTh()
   var allInvoicesTable = '<div class="card mb16">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
@@ -2755,10 +2770,15 @@ function renderAR() {
 
   el.innerHTML =
     (a60p.length ? `<div class="alert r mb16"><div class="alert-icon">&#128680;</div><div><div class="alert-title">${a60p.length} invoices 60+ days past due &mdash; ${fmt(crit)} at collection risk</div><div class="alert-body">Immediate escalation required. Use the &#9998; Edit button on each invoice to set expected payment dates and update collection status.</div></div></div>` : '') +
-    `<div class="g4 mb16">
+    `<div class="g5 mb16">
       <div class="card-sm"><div class="kl">Total AR Outstanding</div><div class="kv green">${fmt(total)}</div><div class="ks">${arInvoices.length} open invoices</div></div>
       <div class="card-sm"><div class="kl">Past Due Total</div><div class="kv red">${fmt(past)}</div><div class="ks">${arInvoices.filter(i=>i.bucket!=='current').length} invoices overdue</div></div>
       <div class="card-sm"><div class="kl">60+ Day Risk</div><div class="kv red">${fmt(crit)}</div><div class="ks">${a60p.length} invoices &mdash; escalate</div></div>
+      <div class="card-sm" style="border-color:rgba(16,185,129,0.35)">
+        <div class="kl" style="color:#10B981">&#9651; Expected Next 30 Days</div>
+        <div class="kv green">${fmt(next30Amt)}</div>
+        <div class="ks">${next30Count} invoice${next30Count!==1?'s':''} &mdash; ${hasExpectedDates?'exp. &amp; due dates':'due dates only'}</div>
+      </div>
       <div class="card-sm"><div class="kl">Avg Days Outstanding</div><div class="kv amber">${avgDays}d</div><div class="ks">Target: under 30 days</div></div>
     </div>` +
     allInvoicesTable +
