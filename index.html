@@ -4782,6 +4782,211 @@ function renderBacklog() {
   </div>`;
 
 
+  // ── Tab state ─────────────────────────────────────────────────
+  var activeDept = window._backlogTab || 'ornamental';
+  window._backlogTab = activeDept;
+
+  if (!window._backlogCollapsed) window._backlogCollapsed = {};
+  function isCollapsed(dept, stage) { return window._backlogCollapsed[dept+':'+stage] === true; }
+
+  window._toggleStage = function(dept, stage) {
+    window._backlogCollapsed[dept+':'+stage] = !window._backlogCollapsed[dept+':'+stage];
+    renderBacklog();
+  };
+  window._collapseAll = function(dept) {
+    stages.forEach(function(s){ window._backlogCollapsed[dept+':'+s] = true; });
+    renderBacklog();
+  };
+  window._expandAll = function(dept) {
+    stages.forEach(function(s){ window._backlogCollapsed[dept+':'+s] = false; });
+    renderBacklog();
+  };
+  window._switchTab = function(dept) {
+    window._backlogTab = dept;
+    renderBacklog();
+  };
+
+  const deptProjects = projects.filter(p => (p.dept || 'ornamental') === activeDept);
+  const deptColor0   = activeDept === 'structural' ? '#3B82F6' : '#F97316';
+  const deptBorder   = activeDept === 'structural' ? 'rgba(59,130,246,0.25)' : 'rgba(249,115,22,0.25)';
+
+  // ── Dept tabs ─────────────────────────────────────────────────
+  const tabs = `<div style="display:flex;gap:0;margin-bottom:16px;border-radius:8px;overflow:hidden;border:1px solid var(--border)">
+    <button onclick="window._switchTab('ornamental')"
+      style="flex:1;padding:9px 0;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;border:none;cursor:pointer;
+        background:${activeDept==='ornamental'?'rgba(249,115,22,0.15)':'var(--navy-3)'};
+        color:${activeDept==='ornamental'?'#F97316':'var(--white-faint)'};
+        border-right:1px solid var(--border)">
+      🔨 Ornamental &nbsp;<span style="font-size:9px;opacity:0.8">${ornProjects.length} jobs · ${fmt(ornTotal)}</span>
+    </button>
+    <button onclick="window._switchTab('structural')"
+      style="flex:1;padding:9px 0;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;border:none;cursor:pointer;
+        background:${activeDept==='structural'?'rgba(59,130,246,0.15)':'var(--navy-3)'};
+        color:${activeDept==='structural'?'#3B82F6':'var(--white-faint)'}">
+      🏗️ Structural &nbsp;<span style="font-size:9px;opacity:0.8">${strProjects.length} jobs · ${fmt(strTotal)}</span>
+    </button>
+  </div>`;
+
+  // ── Collapse/expand controls ──────────────────────────────────
+  const collapseControls = `<div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:10px">
+    <button onclick="window._expandAll('${activeDept}')"
+      style="font-size:9px;font-family:'DM Mono',monospace;background:var(--navy-3);border:1px solid var(--border);color:var(--white-faint);padding:4px 10px;border-radius:5px;cursor:pointer;">▼ Expand All</button>
+    <button onclick="window._collapseAll('${activeDept}')"
+      style="font-size:9px;font-family:'DM Mono',monospace;background:var(--navy-3);border:1px solid var(--border);color:var(--white-faint);padding:4px 10px;border-radius:5px;cursor:pointer;">▲ Collapse All</button>
+  </div>`;
+
+  // ── Dept-specific inflow timeline ─────────────────────────────
+  const deptInflows    = buildAsanaInflowsForDept(activeDept);
+  const nonZeroWksD    = deptInflows.map((v,i) => ({v,i})).filter(x => x.v > 0);
+  const maxInflowValD  = Math.max(...deptInflows, 1);
+  const totalProjectedD = deptInflows.reduce((s,v) => s+v, 0);
+  const mnths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var wkS = new Date(TODAY); wkS.setDate(wkS.getDate() - wkS.getDay());
+  const wkLbls = [];
+  for (var wi = 0; wi < 13; wi++) {
+    var ws = new Date(wkS); ws.setDate(ws.getDate() + wi * 7);
+    wkLbls.push(mnths[ws.getMonth()] + ' ' + ws.getDate());
+  }
+
+  const timelineRowsD = nonZeroWksD.map(({v, i}) => {
+    const lbl = wkLbls[i];
+    const pct = Math.round(v / maxInflowValD * 100);
+    const col = v > 150000 ? '#10B981' : v > 80000 ? '#3B82F6' : deptColor0;
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">
+      <div style="width:44px;font-size:9px;font-family:'DM Mono',monospace;color:${i<6?'var(--white)':'var(--white-faint)'}">${lbl}</div>
+      <div style="flex:1;height:20px;background:var(--navy-5);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${col};display:flex;align-items:center;padding-left:9px;font-size:13px;font-family:'DM Mono',monospace;color:white;font-weight:600;white-space:nowrap;overflow:hidden">${fmt(v)}</div>
+      </div>
+      <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);width:40px;text-align:right">Wk ${i+1}</div>
+    </div>`;
+  }).join('');
+
+  const timelineNote = isLive
+    ? `<div style="margin-top:10px;padding:8px 10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:6px;font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">&#x2705; Live Asana data &middot; Past dates excluded &middot; JobNimbus invoices take priority</div>`
+    : `<div style="margin-top:10px;padding:8px 10px;background:var(--navy-3);border-radius:6px;font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">&#x1F4A1; Connect Asana API to sync live project data</div>`;
+
+  const timelineD = `<div class="card mb16" style="border-color:${deptBorder}">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div>
+        <div class="sec" style="margin-bottom:2px">Projected Inflow by Week</div>
+        <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">${activeDept==='structural'?'Slab-pour anchors':'Due-date offsets'} · 13-week window</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace;color:${deptColor0}">${fmt(totalProjectedD)}</div>
+        <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">13-wk projected</div>
+      </div>
+    </div>
+    ${nonZeroWksD.length ? timelineRowsD : `<div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);text-align:center;padding:12px">No projected inflows in the next 13 weeks</div>`}
+    ${timelineNote}
+  </div>`;
+
+  // ── Collapsible stage sections ────────────────────────────────
+  function stageSectionTabbed(stageKey) {
+    const cfg        = STAGE_CONFIG[stageKey];
+    const stageProjs = deptProjects.filter(p => p.stage === stageKey);
+    if (!stageProjs.length) return '';
+    const stageTotal = stageProjs.reduce((s,p) => s + backlogRemaining(p), 0);
+    const collapsed  = isCollapsed(activeDept, stageKey);
+
+    const cards = collapsed ? '' : stageProjs.map(p => {
+      const remaining   = backlogRemaining(p);
+      const pctInvoiced = p.contractValue > 0 ? Math.round((p.invoiced||0) / p.contractValue * 100) : 0;
+      const dept        = p.dept || 'ornamental';
+      const deptColor   = dept === 'structural' ? '#3B82F6' : '#F97316';
+      const deptLabel   = dept === 'structural' ? 'STRUCT' : 'ORN';
+
+      var lastPmtDate = null;
+      if (dept === 'ornamental' && p.dueDate) {
+        lastPmtDate = new Date(p.dueDate); lastPmtDate.setDate(lastPmtDate.getDate() + 30);
+      } else if (dept === 'structural') {
+        if (p.dueDate && p.erectionBalance > 0) {
+          lastPmtDate = new Date(p.dueDate); lastPmtDate.setDate(lastPmtDate.getDate() + 30);
+        } else if (p.slabPourDate) {
+          lastPmtDate = new Date(p.slabPourDate); lastPmtDate.setDate(lastPmtDate.getDate() + 30);
+        }
+      }
+      var lastPmtStr = lastPmtDate ? lastPmtDate.toISOString().split('T')[0] : (p.invoiceDate || p.dueDate);
+      const wk = invoiceWkLabel(lastPmtStr);
+
+      var payPills = '';
+      if (isLive) {
+        var pmts = [];
+        if (dept === 'ornamental') {
+          if (p.fabricationDraw > 0)    pmts.push({ label:'Fab Draw',    amt:p.fabricationDraw,    col:'#8B5CF6' });
+          if (p.installDraw > 0)        pmts.push({ label:'Install Draw', amt:p.installDraw,        col:'#3B82F6' });
+          if (p.finalPayment > 0)       pmts.push({ label:'Final',        amt:p.finalPayment,       col:'#10B981' });
+        } else {
+          if (p.fabricationDeposit > 0) pmts.push({ label:'Fab Dep',     amt:p.fabricationDeposit, col:'#8B5CF6' });
+          if (p.erectionDeposit > 0)    pmts.push({ label:'Erect Dep',   amt:p.erectionDeposit,    col:'#F59E0B' });
+          if (p.fabricationBalance > 0) pmts.push({ label:'Fab Bal',     amt:p.fabricationBalance, col:'#3B82F6' });
+          if (p.erectionBalance > 0)    pmts.push({ label:'Erect Bal',   amt:p.erectionBalance,    col:'#10B981' });
+        }
+        if (pmts.length) {
+          payPills = '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">'
+            + pmts.map(pm => `<span style="font-size:9px;font-family:'DM Mono',monospace;background:${pm.col}18;border:1px solid ${pm.col}44;color:${pm.col};padding:2px 7px;border-radius:10px">${pm.label}: ${fmt(pm.amt)}</span>`).join('')
+            + '</div>';
+        }
+      }
+
+      const progressBar = `<div style="height:5px;background:var(--navy-5);border-radius:3px;overflow:hidden;margin:8px 0 10px">
+        <div style="height:100%;width:${pctInvoiced}%;background:${cfg.color};border-radius:3px;transition:width .3s"></div>
+      </div>`;
+
+      const anchorLabel = (dept === 'structural' && p.slabPourDate) ? 'SLAB POUR' : 'DUE DATE';
+      const anchorDate  = (dept === 'structural' && p.slabPourDate) ? p.slabPourDate : (p.dueDate || p.invoiceDate || '\u2014');
+
+      return `<div style="background:var(--navy-3);border:1px solid var(--border);border-left:3px solid ${cfg.color};border-radius:9px;padding:13px 15px;margin-bottom:7px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:7px">
+              <div style="font-size:13px;font-weight:600;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+              <span style="font-size:8px;font-family:'DM Mono',monospace;background:${deptColor}18;border:1px solid ${deptColor}44;color:${deptColor};padding:1px 5px;border-radius:3px;flex-shrink:0">${deptLabel}</span>
+            </div>
+            <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-top:2px">${p.id||''} ${p.client ? '&middot; '+p.client : ''}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px">
+            <div style="font-size:15px;font-weight:700;font-family:'DM Mono',monospace;color:${cfg.color}">${fmt(remaining)}</div>
+            <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">of ${fmt(p.contractValue)}</div>
+          </div>
+        </div>
+        ${progressBar}
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:${payPills?'4':'9'}px">
+          <div>
+            <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">CONTRACT VALUE</div>
+            <div style="font-size:11px;font-family:'DM Mono',monospace;margin-top:2px;color:var(--white-dim)">${fmt(p.contractValue)}</div>
+          </div>
+          <div>
+            <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">${anchorLabel}</div>
+            <div style="font-size:11px;font-family:'DM Mono',monospace;margin-top:2px;color:var(--white)">${anchorDate}</div>
+          </div>
+          <div>
+            <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">FINAL PMT WEEK</div>
+            <div style="font-size:11px;font-family:'DM Mono',monospace;margin-top:2px;color:${cfg.color}">${wk ? 'Wk '+wk.wk+' \u2014 '+wk.lbl : 'Outside window'}</div>
+          </div>
+        </div>
+        ${payPills}
+        ${p.description ? `<div style="font-size:10px;color:var(--white-dim);background:var(--navy-4);border-radius:5px;padding:6px 10px;margin-top:9px"><span style="color:var(--white-faint);font-family:'DM Mono',monospace;font-size:9px">SCOPE </span>${p.description}</div>` : ''}
+        ${p.notes ? `<div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-top:6px;padding:5px 10px;background:var(--navy-5);border-radius:4px">&#x1F4DD; ${p.notes}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:14px">
+      <div onclick="window._toggleStage('${activeDept}','${stageKey}')"
+        style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:var(--navy-3);border:1px solid var(--border);border-left:3px solid ${cfg.color};border-radius:8px;cursor:pointer;user-select:none;margin-bottom:${collapsed?'0':'8px'}">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:13px">${cfg.icon}</span>
+          <span style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${cfg.color};font-family:'DM Mono',monospace">${cfg.label}</span>
+          <span style="font-size:9px;background:${cfg.color}22;border:1px solid ${cfg.color}44;color:${cfg.color};padding:1px 6px;border-radius:10px;font-family:'DM Mono',monospace">${stageProjs.length} project${stageProjs.length!==1?'s':''}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:${cfg.color}">${fmt(stageTotal)}</span>
+          <span style="font-size:11px;color:var(--white-faint)">${collapsed?'▶':'▼'}</span>
+        </div>
+      </div>
+      ${cards}
+    </div>`;
+  }
+
   el.innerHTML = kpis + tabs + timelineD + collapseControls + stages.map(stageSectionTabbed).join('');
 }
 
