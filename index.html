@@ -3832,6 +3832,63 @@ function buildAsanaInflows() {
   return inflows;
 }
 
+// Returns inflows filtered to a single dept ('ornamental' or 'structural')
+function buildAsanaInflowsForDept(dept) {
+  var all = buildAsanaInflows();
+  // Rebuild but filtered — reuse full function logic with dept filter
+  var allWkStarts = [];
+  var allWkEnds   = [];
+  var start = new Date(TODAY);
+  start.setDate(start.getDate() - start.getDay());
+  for (var i = 0; i < 13; i++) {
+    var ws = new Date(start); ws.setDate(ws.getDate() + i * 7);
+    var we = new Date(ws);    we.setDate(we.getDate() + 6);
+    allWkStarts.push(ws);
+    allWkEnds.push(we);
+  }
+  var arJobNames = {};
+  arInvoices.forEach(function(inv) {
+    if (inv.project) arJobNames[inv.project.toLowerCase().trim()] = true;
+    if (inv.client)  arJobNames[inv.client.toLowerCase().trim()]  = true;
+  });
+  var inflows = [0,0,0,0,0,0,0,0,0,0,0,0,0];
+  var projects = asanaProjects.length ? asanaProjects : backlogProjects;
+  projects.filter(function(p) { return (p.dept || 'ornamental') === dept; })
+  .forEach(function(p) {
+    var nameKey = (p.name || '').toLowerCase().trim();
+    if (arJobNames[nameKey]) return;
+    if (dept === 'ornamental') {
+      var dueDate = p.dueDate ? new Date(p.dueDate) : null;
+      if (!dueDate) return;
+      var payments = [];
+      if (p.fabricationDraw > 0) { var d1 = new Date(dueDate); d1.setDate(d1.getDate()-60); payments.push({amt:p.fabricationDraw, date:d1}); }
+      if (p.installDraw > 0)     { var d2 = new Date(dueDate); d2.setDate(d2.getDate()-30); payments.push({amt:p.installDraw,     date:d2}); }
+      if (p.finalPayment > 0)    { var d3 = new Date(dueDate); d3.setDate(d3.getDate()+30); payments.push({amt:p.finalPayment,    date:d3}); }
+      if (!payments.length && p.contractValue > 0) { var d4 = new Date(dueDate); d4.setDate(d4.getDate()+30); payments.push({amt:p.contractValue, date:d4}); }
+      payments.forEach(function(pmt) {
+        if (pmt.date < TODAY) return;
+        for (var w = 0; w < 13; w++) { if (pmt.date >= allWkStarts[w] && pmt.date <= allWkEnds[w]) { inflows[w] += pmt.amt; break; } }
+      });
+    } else {
+      var slabDate = p.slabPourDate ? new Date(p.slabPourDate) : null;
+      var dueStr   = p.dueDate      ? new Date(p.dueDate)      : null;
+      if (!slabDate && !dueStr) return;
+      var sp = [];
+      if (slabDate) {
+        if (p.fabricationDeposit > 0) { var s1 = new Date(slabDate); s1.setDate(s1.getDate()-21); sp.push({amt:p.fabricationDeposit, date:s1}); }
+        if (p.erectionDeposit > 0)    { var s2 = new Date(slabDate); s2.setDate(s2.getDate()+7);  sp.push({amt:p.erectionDeposit,    date:s2}); }
+        if (p.fabricationBalance > 0) { var s3 = new Date(slabDate); s3.setDate(s3.getDate()+30); sp.push({amt:p.fabricationBalance, date:s3}); }
+      }
+      if (p.erectionBalance > 0 && dueStr) { var s4 = new Date(dueStr); s4.setDate(s4.getDate()+30); sp.push({amt:p.erectionBalance, date:s4}); }
+      sp.forEach(function(pmt) {
+        if (pmt.date < TODAY) return;
+        for (var w = 0; w < 13; w++) { if (pmt.date >= allWkStarts[w] && pmt.date <= allWkEnds[w]) { inflows[w] += pmt.amt; break; } }
+      });
+    }
+  });
+  return inflows;
+}
+
 function updateARBadge() {
   var el = document.getElementById('ar-badge');
   if (el) el.textContent = arInvoices.length;
@@ -4724,143 +4781,8 @@ function renderBacklog() {
     <div class="card-sm"><div class="kl">Structural Backlog</div><div class="kv" style="color:#3B82F6">${fmt(strTotal)}</div><div class="ks">${strProjects.length} jobs</div></div>
   </div>`;
 
-  // Projected inflow timeline from payment logic
-  const asanaInflows = buildAsanaInflows();
-  const months13 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var wkStart13 = new Date(TODAY); wkStart13.setDate(wkStart13.getDate() - wkStart13.getDay());
-  const wkLabels13 = [];
-  for (var wi13 = 0; wi13 < 13; wi13++) {
-    var ws13 = new Date(wkStart13); ws13.setDate(ws13.getDate() + wi13 * 7);
-    wkLabels13.push(months13[ws13.getMonth()] + ' ' + ws13.getDate());
-  }
-  const nonZeroWks   = asanaInflows.map((v,i) => ({v,i})).filter(x => x.v > 0);
-  const maxInflowVal = Math.max(...asanaInflows, 1);
-  const totalProjected = asanaInflows.reduce((s,v) => s+v, 0);
 
-  const timelineRows = nonZeroWks.map(({v, i}) => {
-    const lbl = wkLabels13[i];
-    const pct = Math.round(v / maxInflowVal * 100);
-    const col = v > 150000 ? '#10B981' : v > 80000 ? '#3B82F6' : '#F97316';
-    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">
-      <div style="width:44px;font-size:9px;font-family:'DM Mono',monospace;color:${i<6?'var(--white)':'var(--white-faint)'}">${lbl}</div>
-      <div style="flex:1;height:20px;background:var(--navy-5);border-radius:3px;overflow:hidden">
-        <div style="height:100%;width:${pct}%;background:${col};display:flex;align-items:center;padding-left:9px;font-size:13px;font-family:'DM Mono',monospace;color:white;font-weight:600;white-space:nowrap;overflow:hidden">${fmt(v)}</div>
-      </div>
-      <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);width:40px;text-align:right">Wk ${i+1}</div>
-    </div>`;
-  }).join('');
-
-  const timelineNote = isLive
-    ? `<div style="margin-top:10px;padding:8px 10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:6px;font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">&#x2705; Live Asana data &middot; Ornamental: due-date offsets &middot; Structural: slab-pour anchors &middot; Past dates excluded &middot; JobNimbus invoices take priority</div>`
-    : `<div style="margin-top:10px;padding:8px 10px;background:var(--navy-3);border-radius:6px;font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">&#x1F4A1; Connect Asana API to sync live project data and payment projections</div>`;
-
-  const timeline = `<div class="card mb16" style="border-color:rgba(249,115,22,0.25)">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div>
-        <div class="sec" style="margin-bottom:2px">Projected Inflow by Week</div>
-        <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">Payment draw projections &middot; 13-week window &middot; Source: ${dataSrc}</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace;color:#F97316">${fmt(totalProjected)}</div>
-        <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">13-wk projected</div>
-      </div>
-    </div>
-    ${nonZeroWks.length ? timelineRows : '<div style="font-size:10px;font-family:\'DM Mono\',monospace;color:var(--white-faint);text-align:center;padding:12px">No projected inflows in the next 13 weeks</div>'}
-    ${timelineNote}
-  </div>`;
-
-  // Project cards by stage
-  function stageSection(stageKey) {
-    const cfg         = STAGE_CONFIG[stageKey];
-    const stageProjs  = projects.filter(p => p.stage === stageKey);
-    if (!stageProjs.length) return '';
-    const stageTotal  = stageProjs.reduce((s,p) => s + backlogRemaining(p), 0);
-
-    const cards = stageProjs.map(p => {
-      const remaining   = backlogRemaining(p);
-      const pctInvoiced = p.contractValue > 0 ? Math.round((p.invoiced||0) / p.contractValue * 100) : 0;
-      const dept        = p.dept || 'ornamental';
-      const deptColor   = dept === 'structural' ? '#3B82F6' : '#F97316';
-      const deptLabel   = dept === 'structural' ? 'STRUCT' : 'ORN';
-      const wk          = invoiceWkLabel(p.invoiceDate || p.dueDate);
-
-      // Payment draw pills for live data
-      var payPills = '';
-      if (isLive) {
-        var pmts = [];
-        if (dept === 'ornamental') {
-          if (p.fabricationDraw > 0) pmts.push({ label:'Fab Draw',    amt:p.fabricationDraw,    col:'#8B5CF6' });
-          if (p.installDraw > 0)     pmts.push({ label:'Install Draw', amt:p.installDraw,        col:'#3B82F6' });
-          if (p.finalPayment > 0)    pmts.push({ label:'Final',        amt:p.finalPayment,       col:'#10B981' });
-        } else {
-          if (p.fabricationDeposit > 0) pmts.push({ label:'Fab Dep',   amt:p.fabricationDeposit, col:'#8B5CF6' });
-          if (p.erectionDeposit > 0)    pmts.push({ label:'Erect Dep', amt:p.erectionDeposit,    col:'#F59E0B' });
-          if (p.fabricationBalance > 0) pmts.push({ label:'Fab Bal',   amt:p.fabricationBalance, col:'#3B82F6' });
-          if (p.erectionBalance > 0)    pmts.push({ label:'Erect Bal', amt:p.erectionBalance,    col:'#10B981' });
-        }
-        if (pmts.length) {
-          payPills = '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">'
-            + pmts.map(pm => `<span style="font-size:9px;font-family:'DM Mono',monospace;background:${pm.col}18;border:1px solid ${pm.col}44;color:${pm.col};padding:2px 7px;border-radius:10px">${pm.label}: ${fmt(pm.amt)}</span>`).join('')
-            + '</div>';
-        }
-      }
-
-      const progressBar = `<div style="height:5px;background:var(--navy-5);border-radius:3px;overflow:hidden;margin:8px 0 10px">
-        <div style="height:100%;width:${pctInvoiced}%;background:${cfg.color};border-radius:3px;transition:width .3s"></div>
-      </div>`;
-
-      const anchorLabel = (dept === 'structural' && p.slabPourDate) ? 'SLAB POUR' : 'DUE DATE';
-      const anchorDate  = (dept === 'structural' && p.slabPourDate) ? p.slabPourDate : (p.dueDate || p.invoiceDate || '\u2014');
-
-      return `<div style="background:var(--navy-3);border:1px solid var(--border);border-left:3px solid ${cfg.color};border-radius:9px;padding:13px 15px;margin-bottom:7px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;gap:7px">
-              <div style="font-size:13px;font-weight:600;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
-              <span style="font-size:8px;font-family:'DM Mono',monospace;background:${deptColor}18;border:1px solid ${deptColor}44;color:${deptColor};padding:1px 5px;border-radius:3px;flex-shrink:0">${deptLabel}</span>
-            </div>
-            <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-top:2px">${p.id||''} ${p.client ? '&middot; '+p.client : ''}</div>
-          </div>
-          <div style="text-align:right;flex-shrink:0;margin-left:12px">
-            <div style="font-size:15px;font-weight:700;font-family:'DM Mono',monospace;color:${cfg.color}">${fmt(remaining)}</div>
-            <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">of ${fmt(p.contractValue)}</div>
-          </div>
-        </div>
-        ${progressBar}
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:${payPills?'4':'9'}px">
-          <div>
-            <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">CONTRACT VALUE</div>
-            <div style="font-size:11px;font-family:'DM Mono',monospace;margin-top:2px;color:var(--white-dim)">${fmt(p.contractValue)}</div>
-          </div>
-          <div>
-            <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">${anchorLabel}</div>
-            <div style="font-size:11px;font-family:'DM Mono',monospace;margin-top:2px;color:var(--white)">${anchorDate}</div>
-          </div>
-          <div>
-            <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">FORECAST WEEK</div>
-            <div style="font-size:11px;font-family:'DM Mono',monospace;margin-top:2px;color:${cfg.color}">${wk ? 'Wk '+wk.wk+' \u2014 '+wk.lbl : 'Outside window'}</div>
-          </div>
-        </div>
-        ${payPills}
-        ${p.description ? `<div style="font-size:10px;color:var(--white-dim);background:var(--navy-4);border-radius:5px;padding:6px 10px;margin-top:9px"><span style="color:var(--white-faint);font-family:'DM Mono',monospace;font-size:9px">SCOPE </span>${p.description}</div>` : ''}
-        ${p.notes ? `<div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-top:6px;padding:5px 10px;background:var(--navy-5);border-radius:4px">&#x1F4DD; ${p.notes}</div>` : ''}
-      </div>`;
-    }).join('');
-
-    return `<div style="margin-bottom:20px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 2px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:14px">${cfg.icon}</span>
-          <span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${cfg.color};font-family:'DM Mono',monospace">${cfg.label}</span>
-          <span style="font-size:9px;background:${cfg.color}22;border:1px solid ${cfg.color}44;color:${cfg.color};padding:1px 6px;border-radius:10px;font-family:'DM Mono',monospace">${stageProjs.length} project${stageProjs.length!==1?'s':''}</span>
-        </div>
-        <div style="font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:${cfg.color}">${fmt(stageTotal)} remaining</div>
-      </div>
-      ${cards}
-    </div>`;
-  }
-
-  el.innerHTML = kpis + timeline + stages.map(stageSection).join('');
+  el.innerHTML = kpis + tabs + timelineD + collapseControls + stages.map(stageSectionTabbed).join('');
 }
 
 // ══════════════════════════════════════════════════════════════════
