@@ -3272,11 +3272,8 @@ function loadFromSheets() {
       showJNSyncButtons();
       showBillSyncButtons();
       showAsanaSyncButtons();
-      // Load live Asana projects if present
       var ap = data.asanaProjects || [];
-      if (ap.length) {
-        asanaProjects = ap;
-      }
+      if (ap.length) { asanaProjects = ap; }
       var s = data.settings || {};
       if (s.biweeklyPayroll) biweeklyPayroll = Number(s.biweeklyPayroll);
       if (s.rentAmount)     rentAmount     = Number(s.rentAmount);
@@ -3404,15 +3401,13 @@ function saveFullAR() {
 // JOBNIMBUS LIVE API SYNC
 // ══════════════════════════════════════════════════════════════════
 
-var jnConfigured     = false;  // set to true when Apps Script reports JN key is present
-var billConfigured   = false;  // set to true when Apps Script reports Bill.com credentials present
-var asanaConfigured  = false;  // set to true when Apps Script reports Asana PAT is present
-var jnSyncing    = false;
-var billSyncing  = false;
-var asanaSyncing = false;
-
-// Live Asana project data — replaces mock backlogProjects when synced
-var asanaProjects = [];  // populated from Sheets after sync
+var jnConfigured     = false;
+var billConfigured   = false;
+var asanaConfigured  = false;
+var jnSyncing        = false;
+var billSyncing      = false;
+var asanaSyncing     = false;
+var asanaProjects    = [];
 var arSortCol    = 'bucket';
 var arSortDir    = 1;
 
@@ -3631,6 +3626,7 @@ function triggerBillSync() {
   });
 }
 
+
 // ── ASANA API SYNC ────────────────────────────────────────────────
 function showAsanaSyncButtons() {
   var btn = document.getElementById('asana-sync-btn');
@@ -3638,9 +3634,9 @@ function showAsanaSyncButtons() {
   var dot   = document.getElementById('asana-conn-dot');
   var label = document.getElementById('asana-conn-label');
   if (dot && asanaConfigured) {
-    dot.style.background  = 'var(--green)';
-    dot.style.boxShadow   = '0 0 4px var(--green)';
-    dot.style.animation   = 'none';
+    dot.style.background = 'var(--green)';
+    dot.style.boxShadow  = '0 0 4px var(--green)';
+    dot.style.animation  = 'none';
   }
   if (label && asanaConfigured) {
     label.textContent        = 'API';
@@ -3651,238 +3647,169 @@ function showAsanaSyncButtons() {
     label.style.borderRadius = '3px';
   }
 }
-
 function setAsanaSyncStatus(msg, color) {
   var el = document.getElementById('asana-sync-status');
   if (!el) return;
   el.textContent   = msg;
   el.style.color   = color || 'var(--white-faint)';
   el.style.display = msg ? 'inline' : 'none';
-  if (msg) {
-    clearTimeout(el._t);
-    el._t = setTimeout(function() { el.style.display = 'none'; }, 10000);
-  }
+  if (msg) { clearTimeout(el._t); el._t = setTimeout(function(){ el.style.display='none'; }, 10000); }
 }
-
 function triggerAsanaSync() {
   if (asanaSyncing) return;
-  if (!SHEETS_URL) { showSyncStatus('No Sheets URL configured', 'var(--amber)'); return; }
-
+  if (!SHEETS_URL) { showSyncStatus('No Sheets URL configured','var(--amber)'); return; }
   asanaSyncing = true;
   var btn = document.getElementById('asana-sync-btn');
   if (btn) { btn.textContent = '⟳ Syncing...'; btn.style.opacity = '0.6'; }
-  setAsanaSyncStatus('Fetching projects from Asana...', 'var(--accent)');
-  showSyncStatus('Syncing Asana...', 'var(--accent)');
-
-  // Fire-and-forget GET — Apps Script fetches from Asana and saves to Sheets
+  setAsanaSyncStatus('Fetching projects from Asana...','var(--accent)');
+  showSyncStatus('Syncing Asana...','var(--accent)');
   fetch(SHEETS_URL + '?action=asana_sync&t=' + Date.now(), { mode: 'no-cors' })
   .then(function() {
-    setAsanaSyncStatus('Saving to Sheets… reloading in a moment...', 'var(--accent)');
+    setAsanaSyncStatus('Saving to Sheets… reloading in a moment...','var(--accent)');
     setTimeout(function() {
       fetch(SHEETS_URL + '?t=' + Date.now())
-      .then(function(r) { return r.json(); })
+      .then(function(r){ return r.json(); })
       .then(function(data) {
         asanaSyncing = false;
         if (btn) { btn.innerHTML = '&#x21BB; Sync Asana API'; btn.style.opacity = '1'; }
-
-        if (!data.ok) {
-          setAsanaSyncStatus('Reload failed: ' + (data.error || 'Unknown'), 'var(--red)');
-          showSyncStatus('Asana reload failed', 'var(--red)');
-          return;
-        }
-
+        if (!data.ok) { setAsanaSyncStatus('Reload failed: '+(data.error||'Unknown'),'var(--red)'); return; }
         var ap = data.asanaProjects || [];
         if (ap.length) {
           asanaProjects = ap;
-          renderBacklog();
-          renderDashboard();
-          var msg = 'Synced ' + ap.length + ' projects from Asana';
-          setAsanaSyncStatus(msg, 'var(--green)');
-          showSyncStatus(msg, 'var(--green)');
+          renderBacklog(); renderDashboard();
+          setAsanaSyncStatus('Synced '+ap.length+' projects from Asana','var(--green)');
+          showSyncStatus('Synced '+ap.length+' projects from Asana','var(--green)');
         } else {
-          setAsanaSyncStatus('Sync may still be processing — try again in 10s', 'var(--amber)');
-          showSyncStatus('No Asana data yet — retry shortly', 'var(--amber)');
+          setAsanaSyncStatus('Sync may still be processing — try again in 10s','var(--amber)');
         }
       })
       .catch(function(err) {
         asanaSyncing = false;
         if (btn) { btn.innerHTML = '&#x21BB; Sync Asana API'; btn.style.opacity = '1'; }
-        setAsanaSyncStatus('Reload error: ' + err.message, 'var(--red)');
+        setAsanaSyncStatus('Reload error: '+err.message,'var(--red)');
       });
-    }, 15000); // 15s — two project fetches + section lookups
+    }, 15000);
   })
   .catch(function(err) {
     asanaSyncing = false;
     if (btn) { btn.innerHTML = '&#x21BB; Sync Asana API'; btn.style.opacity = '1'; }
-    setAsanaSyncStatus('Sync trigger error: ' + err.message, 'var(--red)');
-    showSyncStatus('Asana sync failed', 'var(--red)');
+    setAsanaSyncStatus('Sync trigger error: '+err.message,'var(--red)');
   });
 }
 
-// ── ASANA PROJECTED INFLOWS → 13-WEEK FORECAST ───────────────────
-// Returns an array of 13 inflow amounts (index 0 = week 1) derived
-// from live Asana projects. JobNimbus AR invoices always take priority —
-// if a job name matches an existing AR invoice, the Asana projection is skipped.
-function buildAsanaInflows() {
-  var allWkStarts = [];
-  var allWkEnds   = [];
-  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var start = new Date(TODAY);
-  start.setDate(start.getDate() - start.getDay()); // rewind to Sunday
-  for (var i = 0; i < 13; i++) {
-    var ws = new Date(start); ws.setDate(ws.getDate() + i * 7);
-    var we = new Date(ws);    we.setDate(we.getDate() + 6);
-    allWkStarts.push(ws);
-    allWkEnds.push(we);
+// ── DRAW SEQUENCING ───────────────────────────────────────────────
+// Subtracts invoiced amount from draws in order. Returns remaining draws.
+function getRemainingDraws(draws, amountInvoiced) {
+  var remaining = amountInvoiced;
+  var result = [];
+  for (var i = 0; i < draws.length; i++) {
+    var d = draws[i];
+    if (d.amt <= 0) continue;
+    if (remaining >= d.amt) { remaining -= d.amt; }
+    else { result.push({ amt: d.amt - remaining, date: d.date }); remaining = 0; }
   }
+  return result;
+}
 
-  // Build a set of AR invoice project names for dedup check (lowercase)
+// ── ASANA INFLOWS → 13-WEEK FORECAST ─────────────────────────────
+function buildAsanaInflows() {
+  var allWkStarts = [], allWkEnds = [];
+  var start = new Date(TODAY); start.setDate(start.getDate() - start.getDay());
+  for (var i = 0; i < 13; i++) {
+    var ws = new Date(start); ws.setDate(ws.getDate() + i*7);
+    var we = new Date(ws);    we.setDate(we.getDate() + 6);
+    allWkStarts.push(ws); allWkEnds.push(we);
+  }
   var arJobNames = {};
-  arInvoices.forEach(function(inv) {
+  arInvoices.forEach(function(inv){
     if (inv.project) arJobNames[inv.project.toLowerCase().trim()] = true;
     if (inv.client)  arJobNames[inv.client.toLowerCase().trim()]  = true;
   });
-
-  var inflows = [0,0,0,0,0,0,0,0,0,0,0,0,0];
-
+  var inflows  = [0,0,0,0,0,0,0,0,0,0,0,0,0];
   var projects = asanaProjects.length ? asanaProjects : backlogProjects;
   projects.forEach(function(p) {
-    // Skip if a matching AR invoice already exists in JobNimbus
-    var nameKey = (p.name || '').toLowerCase().trim();
+    var nameKey  = (p.name||'').toLowerCase().trim();
     if (arJobNames[nameKey]) return;
-
-    var dept = p.dept || 'ornamental';
-
+    var dept     = p.dept || 'ornamental';
+    var invoiced = p.invoiced || 0;
     if (dept === 'ornamental') {
       var dueDate = p.dueDate ? new Date(p.dueDate) : null;
       if (!dueDate) return;
-
-      var payments = [];
-      if (p.fabricationDraw && p.fabricationDraw > 0) {
-        var fabDate = new Date(dueDate); fabDate.setDate(fabDate.getDate() - 60);
-        payments.push({ amt: p.fabricationDraw, date: fabDate });
-      }
-      if (p.installDraw && p.installDraw > 0) {
-        var instDate = new Date(dueDate); instDate.setDate(instDate.getDate() - 30);
-        payments.push({ amt: p.installDraw, date: instDate });
-      }
-      if (p.finalPayment && p.finalPayment > 0) {
-        var finDate = new Date(dueDate); finDate.setDate(finDate.getDate() + 30);
-        payments.push({ amt: p.finalPayment, date: finDate });
-      }
-      // If no draw fields, use contractValue as final payment
-      if (!payments.length && p.contractValue > 0) {
-        var fallbackDate = new Date(dueDate); fallbackDate.setDate(fallbackDate.getDate() + 30);
-        payments.push({ amt: p.contractValue, date: fallbackDate });
-      }
-
-      payments.forEach(function(pmt) {
-        if (pmt.date < TODAY) return; // skip past dates
-        for (var w = 0; w < 13; w++) {
-          if (pmt.date >= allWkStarts[w] && pmt.date <= allWkEnds[w]) {
-            inflows[w] += pmt.amt;
-            break;
-          }
-        }
-      });
-
-    } else if (dept === 'structural') {
-      var slabDate = p.slabPourDate ? new Date(p.slabPourDate) : null;
-      var dueStr   = p.dueDate      ? new Date(p.dueDate)      : null;
-
-      // If no slab date AND no due date — nothing to anchor, skip entirely
-      if (!slabDate && !dueStr) return;
-
-      var structPayments = [];
-
-      // Slab-anchored payments — only if slab date exists
-      if (slabDate) {
-        if (p.fabricationDeposit && p.fabricationDeposit > 0) {
-          var sd1 = new Date(slabDate); sd1.setDate(sd1.getDate() - 21);
-          structPayments.push({ amt: p.fabricationDeposit, date: sd1 });
-        }
-        if (p.erectionDeposit && p.erectionDeposit > 0) {
-          var sd2 = new Date(slabDate); sd2.setDate(sd2.getDate() + 7);
-          structPayments.push({ amt: p.erectionDeposit, date: sd2 });
-        }
-        if (p.fabricationBalance && p.fabricationBalance > 0) {
-          var sd3 = new Date(slabDate); sd3.setDate(sd3.getDate() + 30);
-          structPayments.push({ amt: p.fabricationBalance, date: sd3 });
-        }
-      }
-
-      // Erection balance anchors to due date — projects even without a slab date
-      if (p.erectionBalance && p.erectionBalance > 0 && dueStr) {
-        var sd4 = new Date(dueStr); sd4.setDate(sd4.getDate() + 30);
-        structPayments.push({ amt: p.erectionBalance, date: sd4 });
-      }
-
-      structPayments.forEach(function(pmt) {
+      var allDraws = [];
+      if (p.fabricationDraw>0){ var d1=new Date(dueDate); d1.setDate(d1.getDate()-60); allDraws.push({amt:p.fabricationDraw,date:d1}); }
+      if (p.installDraw>0)    { var d2=new Date(dueDate); d2.setDate(d2.getDate()-30); allDraws.push({amt:p.installDraw,date:d2}); }
+      if (p.finalPayment>0)   { var d3=new Date(dueDate); d3.setDate(d3.getDate()+30); allDraws.push({amt:p.finalPayment,date:d3}); }
+      if (!allDraws.length && p.contractValue>0){ var d4=new Date(dueDate); d4.setDate(d4.getDate()+30); allDraws.push({amt:p.contractValue,date:d4}); }
+      getRemainingDraws(allDraws, invoiced).forEach(function(pmt){
         if (pmt.date < TODAY) return;
-        for (var w = 0; w < 13; w++) {
-          if (pmt.date >= allWkStarts[w] && pmt.date <= allWkEnds[w]) {
-            inflows[w] += pmt.amt;
-            break;
-          }
-        }
-      });
-    }
-  });
-
-  return inflows;
-}
-
-// Returns inflows filtered to a single dept ('ornamental' or 'structural')
-function buildAsanaInflowsForDept(dept) {
-  var all = buildAsanaInflows();
-  // Rebuild but filtered — reuse full function logic with dept filter
-  var allWkStarts = [];
-  var allWkEnds   = [];
-  var start = new Date(TODAY);
-  start.setDate(start.getDate() - start.getDay());
-  for (var i = 0; i < 13; i++) {
-    var ws = new Date(start); ws.setDate(ws.getDate() + i * 7);
-    var we = new Date(ws);    we.setDate(we.getDate() + 6);
-    allWkStarts.push(ws);
-    allWkEnds.push(we);
-  }
-  var arJobNames = {};
-  arInvoices.forEach(function(inv) {
-    if (inv.project) arJobNames[inv.project.toLowerCase().trim()] = true;
-    if (inv.client)  arJobNames[inv.client.toLowerCase().trim()]  = true;
-  });
-  var inflows = [0,0,0,0,0,0,0,0,0,0,0,0,0];
-  var projects = asanaProjects.length ? asanaProjects : backlogProjects;
-  projects.filter(function(p) { return (p.dept || 'ornamental') === dept; })
-  .forEach(function(p) {
-    var nameKey = (p.name || '').toLowerCase().trim();
-    if (arJobNames[nameKey]) return;
-    if (dept === 'ornamental') {
-      var dueDate = p.dueDate ? new Date(p.dueDate) : null;
-      if (!dueDate) return;
-      var payments = [];
-      if (p.fabricationDraw > 0) { var d1 = new Date(dueDate); d1.setDate(d1.getDate()-60); payments.push({amt:p.fabricationDraw, date:d1}); }
-      if (p.installDraw > 0)     { var d2 = new Date(dueDate); d2.setDate(d2.getDate()-30); payments.push({amt:p.installDraw,     date:d2}); }
-      if (p.finalPayment > 0)    { var d3 = new Date(dueDate); d3.setDate(d3.getDate()+30); payments.push({amt:p.finalPayment,    date:d3}); }
-      if (!payments.length && p.contractValue > 0) { var d4 = new Date(dueDate); d4.setDate(d4.getDate()+30); payments.push({amt:p.contractValue, date:d4}); }
-      payments.forEach(function(pmt) {
-        if (pmt.date < TODAY) return;
-        for (var w = 0; w < 13; w++) { if (pmt.date >= allWkStarts[w] && pmt.date <= allWkEnds[w]) { inflows[w] += pmt.amt; break; } }
+        for (var w=0; w<13; w++){ if (pmt.date>=allWkStarts[w]&&pmt.date<=allWkEnds[w]){ inflows[w]+=pmt.amt; break; } }
       });
     } else {
       var slabDate = p.slabPourDate ? new Date(p.slabPourDate) : null;
       var dueStr   = p.dueDate      ? new Date(p.dueDate)      : null;
       if (!slabDate && !dueStr) return;
-      var sp = [];
+      var allStrDraws = [];
       if (slabDate) {
-        if (p.fabricationDeposit > 0) { var s1 = new Date(slabDate); s1.setDate(s1.getDate()-21); sp.push({amt:p.fabricationDeposit, date:s1}); }
-        if (p.erectionDeposit > 0)    { var s2 = new Date(slabDate); s2.setDate(s2.getDate()+7);  sp.push({amt:p.erectionDeposit,    date:s2}); }
-        if (p.fabricationBalance > 0) { var s3 = new Date(slabDate); s3.setDate(s3.getDate()+30); sp.push({amt:p.fabricationBalance, date:s3}); }
+        if (p.fabricationDeposit>0){ var s1=new Date(slabDate); s1.setDate(s1.getDate()-21); allStrDraws.push({amt:p.fabricationDeposit,date:s1}); }
+        if (p.erectionDeposit>0)   { var s2=new Date(slabDate); s2.setDate(s2.getDate()+7);  allStrDraws.push({amt:p.erectionDeposit,date:s2}); }
+        if (p.fabricationBalance>0){ var s3=new Date(slabDate); s3.setDate(s3.getDate()+30); allStrDraws.push({amt:p.fabricationBalance,date:s3}); }
       }
-      if (p.erectionBalance > 0 && dueStr) { var s4 = new Date(dueStr); s4.setDate(s4.getDate()+30); sp.push({amt:p.erectionBalance, date:s4}); }
-      sp.forEach(function(pmt) {
+      if (p.erectionBalance>0&&dueStr){ var s4=new Date(dueStr); s4.setDate(s4.getDate()+30); allStrDraws.push({amt:p.erectionBalance,date:s4}); }
+      getRemainingDraws(allStrDraws, invoiced).forEach(function(pmt){
         if (pmt.date < TODAY) return;
-        for (var w = 0; w < 13; w++) { if (pmt.date >= allWkStarts[w] && pmt.date <= allWkEnds[w]) { inflows[w] += pmt.amt; break; } }
+        for (var w=0; w<13; w++){ if (pmt.date>=allWkStarts[w]&&pmt.date<=allWkEnds[w]){ inflows[w]+=pmt.amt; break; } }
+      });
+    }
+  });
+  return inflows;
+}
+
+function buildAsanaInflowsForDept(dept) {
+  var allWkStarts = [], allWkEnds = [];
+  var start = new Date(TODAY); start.setDate(start.getDate() - start.getDay());
+  for (var i = 0; i < 13; i++) {
+    var ws = new Date(start); ws.setDate(ws.getDate() + i*7);
+    var we = new Date(ws);    we.setDate(we.getDate() + 6);
+    allWkStarts.push(ws); allWkEnds.push(we);
+  }
+  var arJobNames = {};
+  arInvoices.forEach(function(inv){
+    if (inv.project) arJobNames[inv.project.toLowerCase().trim()] = true;
+    if (inv.client)  arJobNames[inv.client.toLowerCase().trim()]  = true;
+  });
+  var inflows  = [0,0,0,0,0,0,0,0,0,0,0,0,0];
+  var projects = asanaProjects.length ? asanaProjects : backlogProjects;
+  projects.filter(function(p){ return (p.dept||'ornamental') === dept; })
+  .forEach(function(p) {
+    var nameKey  = (p.name||'').toLowerCase().trim();
+    if (arJobNames[nameKey]) return;
+    var invoiced = p.invoiced || 0;
+    if (dept === 'ornamental') {
+      var dueDate = p.dueDate ? new Date(p.dueDate) : null;
+      if (!dueDate) return;
+      var allDraws = [];
+      if (p.fabricationDraw>0){ var d1=new Date(dueDate); d1.setDate(d1.getDate()-60); allDraws.push({amt:p.fabricationDraw,date:d1}); }
+      if (p.installDraw>0)    { var d2=new Date(dueDate); d2.setDate(d2.getDate()-30); allDraws.push({amt:p.installDraw,date:d2}); }
+      if (p.finalPayment>0)   { var d3=new Date(dueDate); d3.setDate(d3.getDate()+30); allDraws.push({amt:p.finalPayment,date:d3}); }
+      if (!allDraws.length && p.contractValue>0){ var d4=new Date(dueDate); d4.setDate(d4.getDate()+30); allDraws.push({amt:p.contractValue,date:d4}); }
+      getRemainingDraws(allDraws, invoiced).forEach(function(pmt){
+        if (pmt.date < TODAY) return;
+        for (var w=0; w<13; w++){ if (pmt.date>=allWkStarts[w]&&pmt.date<=allWkEnds[w]){ inflows[w]+=pmt.amt; break; } }
+      });
+    } else {
+      var slabDate = p.slabPourDate ? new Date(p.slabPourDate) : null;
+      var dueStr   = p.dueDate      ? new Date(p.dueDate)      : null;
+      if (!slabDate && !dueStr) return;
+      var allStrDraws = [];
+      if (slabDate) {
+        if (p.fabricationDeposit>0){ var s1=new Date(slabDate); s1.setDate(s1.getDate()-21); allStrDraws.push({amt:p.fabricationDeposit,date:s1}); }
+        if (p.erectionDeposit>0)   { var s2=new Date(slabDate); s2.setDate(s2.getDate()+7);  allStrDraws.push({amt:p.erectionDeposit,date:s2}); }
+        if (p.fabricationBalance>0){ var s3=new Date(slabDate); s3.setDate(s3.getDate()+30); allStrDraws.push({amt:p.fabricationBalance,date:s3}); }
+      }
+      if (p.erectionBalance>0&&dueStr){ var s4=new Date(dueStr); s4.setDate(s4.getDate()+30); allStrDraws.push({amt:p.erectionBalance,date:s4}); }
+      getRemainingDraws(allStrDraws, invoiced).forEach(function(pmt){
+        if (pmt.date < TODAY) return;
+        for (var w=0; w<13; w++){ if (pmt.date>=allWkStarts[w]&&pmt.date<=allWkEnds[w]){ inflows[w]+=pmt.amt; break; } }
       });
     }
   });
@@ -4758,21 +4685,17 @@ function renderBacklog() {
   const el = document.getElementById('backlog-content');
   if (!el) return;
 
-  // Use live Asana data if synced, otherwise fall back to mock data
   const isLive   = asanaProjects.length > 0;
   const projects = isLive ? asanaProjects : backlogProjects;
   const dataSrc  = isLive ? 'Asana API' : 'Mock Data';
-
-  const stages = ['upcoming','prefab','fabrication','installation'];
+  const stages   = ['upcoming','prefab','fabrication','installation'];
 
   const totalContract  = projects.reduce((s,p) => s + (p.contractValue||0), 0);
   const totalRemaining = projects.reduce((s,p) => s + backlogRemaining(p), 0);
-
-  // Dept breakdown
-  const ornProjects = projects.filter(p => (p.dept||'ornamental') === 'ornamental');
-  const strProjects = projects.filter(p => p.dept === 'structural');
-  const ornTotal    = ornProjects.reduce((s,p) => s + (p.contractValue||0), 0);
-  const strTotal    = strProjects.reduce((s,p) => s + (p.contractValue||0), 0);
+  const ornProjects    = projects.filter(p => (p.dept||'ornamental') === 'ornamental');
+  const strProjects    = projects.filter(p => p.dept === 'structural');
+  const ornTotal       = ornProjects.reduce((s,p) => s + (p.contractValue||0), 0);
+  const strTotal       = strProjects.reduce((s,p) => s + (p.contractValue||0), 0);
 
   const kpis = `<div class="g4 mb16">
     <div class="card-sm"><div class="kl">Total Backlog</div><div class="kv accent">${fmt(totalContract)}</div><div class="ks">${projects.length} active projects &middot; ${dataSrc}</div></div>
@@ -4781,79 +4704,49 @@ function renderBacklog() {
     <div class="card-sm"><div class="kl">Structural Backlog</div><div class="kv" style="color:#3B82F6">${fmt(strTotal)}</div><div class="ks">${strProjects.length} jobs</div></div>
   </div>`;
 
-
-  // ── Tab state ─────────────────────────────────────────────────
+  // Tab + collapse state
   var activeDept = window._backlogTab || 'ornamental';
   window._backlogTab = activeDept;
-
   if (!window._backlogCollapsed) window._backlogCollapsed = {};
   function isCollapsed(dept, stage) { return window._backlogCollapsed[dept+':'+stage] === true; }
+  window._toggleStage = function(dept,stage){ window._backlogCollapsed[dept+':'+stage]=!window._backlogCollapsed[dept+':'+stage]; renderBacklog(); };
+  window._collapseAll = function(dept){ stages.forEach(function(s){ window._backlogCollapsed[dept+':'+s]=true; }); renderBacklog(); };
+  window._expandAll   = function(dept){ stages.forEach(function(s){ window._backlogCollapsed[dept+':'+s]=false; }); renderBacklog(); };
+  window._switchTab   = function(dept){ window._backlogTab=dept; renderBacklog(); };
 
-  window._toggleStage = function(dept, stage) {
-    window._backlogCollapsed[dept+':'+stage] = !window._backlogCollapsed[dept+':'+stage];
-    renderBacklog();
-  };
-  window._collapseAll = function(dept) {
-    stages.forEach(function(s){ window._backlogCollapsed[dept+':'+s] = true; });
-    renderBacklog();
-  };
-  window._expandAll = function(dept) {
-    stages.forEach(function(s){ window._backlogCollapsed[dept+':'+s] = false; });
-    renderBacklog();
-  };
-  window._switchTab = function(dept) {
-    window._backlogTab = dept;
-    renderBacklog();
-  };
-
-  const deptProjects = projects.filter(p => (p.dept || 'ornamental') === activeDept);
+  const deptProjects = projects.filter(p => (p.dept||'ornamental') === activeDept);
   const deptColor0   = activeDept === 'structural' ? '#3B82F6' : '#F97316';
   const deptBorder   = activeDept === 'structural' ? 'rgba(59,130,246,0.25)' : 'rgba(249,115,22,0.25)';
 
-  // ── Dept tabs ─────────────────────────────────────────────────
   const tabs = `<div style="display:flex;gap:0;margin-bottom:16px;border-radius:8px;overflow:hidden;border:1px solid var(--border)">
-    <button onclick="window._switchTab('ornamental')"
-      style="flex:1;padding:9px 0;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;border:none;cursor:pointer;
-        background:${activeDept==='ornamental'?'rgba(249,115,22,0.15)':'var(--navy-3)'};
-        color:${activeDept==='ornamental'?'#F97316':'var(--white-faint)'};
-        border-right:1px solid var(--border)">
+    <button onclick="window._switchTab('ornamental')" style="flex:1;padding:9px 0;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;border:none;cursor:pointer;background:${activeDept==='ornamental'?'rgba(249,115,22,0.15)':'var(--navy-3)'};color:${activeDept==='ornamental'?'#F97316':'var(--white-faint)'};border-right:1px solid var(--border)">
       🔨 Ornamental &nbsp;<span style="font-size:9px;opacity:0.8">${ornProjects.length} jobs · ${fmt(ornTotal)}</span>
     </button>
-    <button onclick="window._switchTab('structural')"
-      style="flex:1;padding:9px 0;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;border:none;cursor:pointer;
-        background:${activeDept==='structural'?'rgba(59,130,246,0.15)':'var(--navy-3)'};
-        color:${activeDept==='structural'?'#3B82F6':'var(--white-faint)'}">
+    <button onclick="window._switchTab('structural')" style="flex:1;padding:9px 0;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;border:none;cursor:pointer;background:${activeDept==='structural'?'rgba(59,130,246,0.15)':'var(--navy-3)'};color:${activeDept==='structural'?'#3B82F6':'var(--white-faint)'}">
       🏗️ Structural &nbsp;<span style="font-size:9px;opacity:0.8">${strProjects.length} jobs · ${fmt(strTotal)}</span>
     </button>
   </div>`;
 
-  // ── Collapse/expand controls ──────────────────────────────────
   const collapseControls = `<div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:10px">
-    <button onclick="window._expandAll('${activeDept}')"
-      style="font-size:9px;font-family:'DM Mono',monospace;background:var(--navy-3);border:1px solid var(--border);color:var(--white-faint);padding:4px 10px;border-radius:5px;cursor:pointer;">▼ Expand All</button>
-    <button onclick="window._collapseAll('${activeDept}')"
-      style="font-size:9px;font-family:'DM Mono',monospace;background:var(--navy-3);border:1px solid var(--border);color:var(--white-faint);padding:4px 10px;border-radius:5px;cursor:pointer;">▲ Collapse All</button>
+    <button onclick="window._expandAll('${activeDept}')" style="font-size:9px;font-family:'DM Mono',monospace;background:var(--navy-3);border:1px solid var(--border);color:var(--white-faint);padding:4px 10px;border-radius:5px;cursor:pointer;">▼ Expand All</button>
+    <button onclick="window._collapseAll('${activeDept}')" style="font-size:9px;font-family:'DM Mono',monospace;background:var(--navy-3);border:1px solid var(--border);color:var(--white-faint);padding:4px 10px;border-radius:5px;cursor:pointer;">▲ Collapse All</button>
   </div>`;
 
-  // ── Dept-specific inflow timeline ─────────────────────────────
-  const deptInflows    = buildAsanaInflowsForDept(activeDept);
-  const nonZeroWksD    = deptInflows.map((v,i) => ({v,i})).filter(x => x.v > 0);
-  const maxInflowValD  = Math.max(...deptInflows, 1);
+  // Dept inflow timeline
+  const deptInflows     = buildAsanaInflowsForDept(activeDept);
+  const nonZeroWksD     = deptInflows.map((v,i) => ({v,i})).filter(x => x.v > 0);
+  const maxInflowValD   = Math.max(...deptInflows, 1);
   const totalProjectedD = deptInflows.reduce((s,v) => s+v, 0);
   const mnths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var wkS = new Date(TODAY); wkS.setDate(wkS.getDate() - wkS.getDay());
   const wkLbls = [];
-  for (var wi = 0; wi < 13; wi++) {
-    var ws = new Date(wkS); ws.setDate(ws.getDate() + wi * 7);
-    wkLbls.push(mnths[ws.getMonth()] + ' ' + ws.getDate());
-  }
+  for (var wi = 0; wi < 13; wi++) { var wss = new Date(wkS); wss.setDate(wss.getDate()+wi*7); wkLbls.push(mnths[wss.getMonth()]+' '+wss.getDate()); }
 
-  const timelineRowsD = nonZeroWksD.map(({v, i}) => {
-    const lbl = wkLbls[i];
-    const pct = Math.round(v / maxInflowValD * 100);
-    const col = v > 150000 ? '#10B981' : v > 80000 ? '#3B82F6' : deptColor0;
+  const timelineRowsD = nonZeroWksD.map(({v,i}) => {
+    const pct = Math.round(v/maxInflowValD*100);
+    const col = v>150000?'#10B981':v>80000?'#3B82F6':deptColor0;
     return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">
-      <div style="width:44px;font-size:9px;font-family:'DM Mono',monospace;color:${i<6?'var(--white)':'var(--white-faint)'}">${lbl}</div>
+      <div style="width:44px;font-size:9px;font-family:'DM Mono',monospace;color:${i<6?'var(--white)':'var(--white-faint)'}">${wkLbls[i]}</div>
       <div style="flex:1;height:20px;background:var(--navy-5);border-radius:3px;overflow:hidden">
         <div style="height:100%;width:${pct}%;background:${col};display:flex;align-items:center;padding-left:9px;font-size:13px;font-family:'DM Mono',monospace;color:white;font-weight:600;white-space:nowrap;overflow:hidden">${fmt(v)}</div>
       </div>
@@ -4862,13 +4755,12 @@ function renderBacklog() {
   }).join('');
 
   const timelineNote = isLive
-    ? `<div style="margin-top:10px;padding:8px 10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:6px;font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">&#x2705; Live Asana data &middot; Past dates excluded &middot; JobNimbus invoices take priority</div>`
+    ? `<div style="margin-top:10px;padding:8px 10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:6px;font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">&#x2705; Live Asana data &middot; Past dates excluded &middot; Already-invoiced draws skipped &middot; JobNimbus invoices take priority</div>`
     : `<div style="margin-top:10px;padding:8px 10px;background:var(--navy-3);border-radius:6px;font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">&#x1F4A1; Connect Asana API to sync live project data</div>`;
 
   const timelineD = `<div class="card mb16" style="border-color:${deptBorder}">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div>
-        <div class="sec" style="margin-bottom:2px">Projected Inflow by Week</div>
+      <div><div class="sec" style="margin-bottom:2px">Projected Inflow by Week</div>
         <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">${activeDept==='structural'?'Slab-pour anchors':'Due-date offsets'} · 13-week window</div>
       </div>
       <div style="text-align:right">
@@ -4880,7 +4772,6 @@ function renderBacklog() {
     ${timelineNote}
   </div>`;
 
-  // ── Collapsible stage sections ────────────────────────────────
   function stageSectionTabbed(stageKey) {
     const cfg        = STAGE_CONFIG[stageKey];
     const stageProjs = deptProjects.filter(p => p.stage === stageKey);
@@ -4890,36 +4781,32 @@ function renderBacklog() {
 
     const cards = collapsed ? '' : stageProjs.map(p => {
       const remaining   = backlogRemaining(p);
-      const pctInvoiced = p.contractValue > 0 ? Math.round((p.invoiced||0) / p.contractValue * 100) : 0;
+      const pctInvoiced = p.contractValue > 0 ? Math.round((p.invoiced||0)/p.contractValue*100) : 0;
       const dept        = p.dept || 'ornamental';
       const deptColor   = dept === 'structural' ? '#3B82F6' : '#F97316';
       const deptLabel   = dept === 'structural' ? 'STRUCT' : 'ORN';
 
       var lastPmtDate = null;
-      if (dept === 'ornamental' && p.dueDate) {
-        lastPmtDate = new Date(p.dueDate); lastPmtDate.setDate(lastPmtDate.getDate() + 30);
-      } else if (dept === 'structural') {
-        if (p.dueDate && p.erectionBalance > 0) {
-          lastPmtDate = new Date(p.dueDate); lastPmtDate.setDate(lastPmtDate.getDate() + 30);
-        } else if (p.slabPourDate) {
-          lastPmtDate = new Date(p.slabPourDate); lastPmtDate.setDate(lastPmtDate.getDate() + 30);
-        }
+      if (dept === 'ornamental' && p.dueDate) { lastPmtDate = new Date(p.dueDate); lastPmtDate.setDate(lastPmtDate.getDate()+30); }
+      else if (dept === 'structural') {
+        if (p.dueDate && p.erectionBalance>0) { lastPmtDate = new Date(p.dueDate); lastPmtDate.setDate(lastPmtDate.getDate()+30); }
+        else if (p.slabPourDate) { lastPmtDate = new Date(p.slabPourDate); lastPmtDate.setDate(lastPmtDate.getDate()+30); }
       }
-      var lastPmtStr = lastPmtDate ? lastPmtDate.toISOString().split('T')[0] : (p.invoiceDate || p.dueDate);
+      var lastPmtStr = lastPmtDate ? lastPmtDate.toISOString().split('T')[0] : (p.invoiceDate||p.dueDate);
       const wk = invoiceWkLabel(lastPmtStr);
 
       var payPills = '';
       if (isLive) {
         var pmts = [];
         if (dept === 'ornamental') {
-          if (p.fabricationDraw > 0)    pmts.push({ label:'Fab Draw',    amt:p.fabricationDraw,    col:'#8B5CF6' });
-          if (p.installDraw > 0)        pmts.push({ label:'Install Draw', amt:p.installDraw,        col:'#3B82F6' });
-          if (p.finalPayment > 0)       pmts.push({ label:'Final',        amt:p.finalPayment,       col:'#10B981' });
+          if (p.fabricationDraw>0)    pmts.push({label:'Fab Draw',    amt:p.fabricationDraw,    col:'#8B5CF6'});
+          if (p.installDraw>0)        pmts.push({label:'Install Draw', amt:p.installDraw,        col:'#3B82F6'});
+          if (p.finalPayment>0)       pmts.push({label:'Final',        amt:p.finalPayment,       col:'#10B981'});
         } else {
-          if (p.fabricationDeposit > 0) pmts.push({ label:'Fab Dep',     amt:p.fabricationDeposit, col:'#8B5CF6' });
-          if (p.erectionDeposit > 0)    pmts.push({ label:'Erect Dep',   amt:p.erectionDeposit,    col:'#F59E0B' });
-          if (p.fabricationBalance > 0) pmts.push({ label:'Fab Bal',     amt:p.fabricationBalance, col:'#3B82F6' });
-          if (p.erectionBalance > 0)    pmts.push({ label:'Erect Bal',   amt:p.erectionBalance,    col:'#10B981' });
+          if (p.fabricationDeposit>0) pmts.push({label:'Fab Dep',     amt:p.fabricationDeposit, col:'#8B5CF6'});
+          if (p.erectionDeposit>0)    pmts.push({label:'Erect Dep',   amt:p.erectionDeposit,    col:'#F59E0B'});
+          if (p.fabricationBalance>0) pmts.push({label:'Fab Bal',     amt:p.fabricationBalance, col:'#3B82F6'});
+          if (p.erectionBalance>0)    pmts.push({label:'Erect Bal',   amt:p.erectionBalance,    col:'#10B981'});
         }
         if (pmts.length) {
           payPills = '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">'
@@ -4931,9 +4818,8 @@ function renderBacklog() {
       const progressBar = `<div style="height:5px;background:var(--navy-5);border-radius:3px;overflow:hidden;margin:8px 0 10px">
         <div style="height:100%;width:${pctInvoiced}%;background:${cfg.color};border-radius:3px;transition:width .3s"></div>
       </div>`;
-
-      const anchorLabel = (dept === 'structural' && p.slabPourDate) ? 'SLAB POUR' : 'DUE DATE';
-      const anchorDate  = (dept === 'structural' && p.slabPourDate) ? p.slabPourDate : (p.dueDate || p.invoiceDate || '\u2014');
+      const anchorLabel = (dept==='structural'&&p.slabPourDate) ? 'SLAB POUR' : 'DUE DATE';
+      const anchorDate  = (dept==='structural'&&p.slabPourDate) ? p.slabPourDate : (p.dueDate||p.invoiceDate||'\u2014');
 
       return `<div style="background:var(--navy-3);border:1px solid var(--border);border-left:3px solid ${cfg.color};border-radius:9px;padding:13px 15px;margin-bottom:7px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
@@ -4942,7 +4828,7 @@ function renderBacklog() {
               <div style="font-size:13px;font-weight:600;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
               <span style="font-size:8px;font-family:'DM Mono',monospace;background:${deptColor}18;border:1px solid ${deptColor}44;color:${deptColor};padding:1px 5px;border-radius:3px;flex-shrink:0">${deptLabel}</span>
             </div>
-            <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-top:2px">${p.id||''} ${p.client ? '&middot; '+p.client : ''}</div>
+            <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-top:2px">${p.id||''} ${p.client?'&middot; '+p.client:''}</div>
           </div>
           <div style="text-align:right;flex-shrink:0;margin-left:12px">
             <div style="font-size:15px;font-weight:700;font-family:'DM Mono',monospace;color:${cfg.color}">${fmt(remaining)}</div>
@@ -4950,10 +4836,14 @@ function renderBacklog() {
           </div>
         </div>
         ${progressBar}
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:${payPills?'4':'9'}px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:${payPills?'4':'9'}px">
           <div>
             <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">CONTRACT VALUE</div>
             <div style="font-size:11px;font-family:'DM Mono',monospace;margin-top:2px;color:var(--white-dim)">${fmt(p.contractValue)}</div>
+          </div>
+          <div>
+            <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">INVOICED</div>
+            <div style="font-size:11px;font-family:'DM Mono',monospace;margin-top:2px;color:${(p.invoiced||0)>0?'var(--amber)':'var(--white-faint)'}">${fmt(p.invoiced||0)} <span style="font-size:9px;opacity:0.6">(${pctInvoiced}%)</span></div>
           </div>
           <div>
             <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">${anchorLabel}</div>
@@ -4961,18 +4851,17 @@ function renderBacklog() {
           </div>
           <div>
             <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">FINAL PMT WEEK</div>
-            <div style="font-size:11px;font-family:'DM Mono',monospace;margin-top:2px;color:${cfg.color}">${wk ? 'Wk '+wk.wk+' \u2014 '+wk.lbl : 'Outside window'}</div>
+            <div style="font-size:11px;font-family:'DM Mono',monospace;margin-top:2px;color:${cfg.color}">${wk?'Wk '+wk.wk+' \u2014 '+wk.lbl:'Outside window'}</div>
           </div>
         </div>
         ${payPills}
-        ${p.description ? `<div style="font-size:10px;color:var(--white-dim);background:var(--navy-4);border-radius:5px;padding:6px 10px;margin-top:9px"><span style="color:var(--white-faint);font-family:'DM Mono',monospace;font-size:9px">SCOPE </span>${p.description}</div>` : ''}
-        ${p.notes ? `<div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-top:6px;padding:5px 10px;background:var(--navy-5);border-radius:4px">&#x1F4DD; ${p.notes}</div>` : ''}
+        ${p.description?`<div style="font-size:10px;color:var(--white-dim);background:var(--navy-4);border-radius:5px;padding:6px 10px;margin-top:9px"><span style="color:var(--white-faint);font-family:'DM Mono',monospace;font-size:9px">SCOPE </span>${p.description}</div>`:''}
+        ${p.notes?`<div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-top:6px;padding:5px 10px;background:var(--navy-5);border-radius:4px">&#x1F4DD; ${p.notes}</div>`:''}
       </div>`;
     }).join('');
 
     return `<div style="margin-bottom:14px">
-      <div onclick="window._toggleStage('${activeDept}','${stageKey}')"
-        style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:var(--navy-3);border:1px solid var(--border);border-left:3px solid ${cfg.color};border-radius:8px;cursor:pointer;user-select:none;margin-bottom:${collapsed?'0':'8px'}">
+      <div onclick="window._toggleStage('${activeDept}','${stageKey}')" style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:var(--navy-3);border:1px solid var(--border);border-left:3px solid ${cfg.color};border-radius:8px;cursor:pointer;user-select:none;margin-bottom:${collapsed?'0':'8px'}">
         <div style="display:flex;align-items:center;gap:8px">
           <span style="font-size:13px">${cfg.icon}</span>
           <span style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${cfg.color};font-family:'DM Mono',monospace">${cfg.label}</span>
