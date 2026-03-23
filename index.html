@@ -4784,10 +4784,11 @@ function renderBacklog() {
 
   function stageSectionTabbed(stageKey) {
     const cfg        = STAGE_CONFIG[stageKey];
-    const stageProjs = deptProjects.filter(p => p.stage === stageKey);
+    const stageProjs        = deptProjects.filter(p => p.stage === stageKey);
     if (!stageProjs.length) return '';
-    const stageTotal = stageProjs.reduce((s,p) => s + backlogRemaining(p), 0);
-    const collapsed  = isCollapsed(activeDept, stageKey);
+    const stageTotal        = stageProjs.reduce((s,p) => s + backlogRemaining(p), 0);
+    const stageContractTotal = stageProjs.reduce((s,p) => s + (p.contractValue||0), 0);
+    const collapsed         = isCollapsed(activeDept, stageKey);
 
     const cards = collapsed ? '' : stageProjs.map(p => {
       const remaining   = backlogRemaining(p);
@@ -4877,8 +4878,15 @@ function renderBacklog() {
           <span style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${cfg.color};font-family:'DM Mono',monospace">${cfg.label}</span>
           <span style="font-size:9px;background:${cfg.color}22;border:1px solid ${cfg.color}44;color:${cfg.color};padding:1px 6px;border-radius:10px;font-family:'DM Mono',monospace">${stageProjs.length} project${stageProjs.length!==1?'s':''}</span>
         </div>
-        <div style="display:flex;align-items:center;gap:12px">
-          <span style="font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:${cfg.color}">${fmt(stageTotal)}</span>
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="text-align:right">
+            <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);letter-spacing:.05em">CONTRACT</div>
+            <div style="font-size:14px;font-weight:700;font-family:'DM Mono',monospace;color:var(--white-dim)">${fmt(stageContractTotal)}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);letter-spacing:.05em">REMAINING</div>
+            <div style="font-size:14px;font-weight:700;font-family:'DM Mono',monospace;color:${cfg.color}">${fmt(stageTotal)}</div>
+          </div>
           <span style="font-size:11px;color:var(--white-faint)">${collapsed?'▶':'▼'}</span>
         </div>
       </div>
