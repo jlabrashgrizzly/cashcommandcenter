@@ -4729,11 +4729,20 @@ function renderBacklog() {
   const deptBorder   = activeDept === 'structural' ? 'rgba(59,130,246,0.25)' : 'rgba(249,115,22,0.25)';
 
   const tabs = `<div style="display:flex;gap:0;margin-bottom:16px;border-radius:8px;overflow:hidden;border:1px solid var(--border)">
-    <button onclick="window._switchTab('ornamental')" style="flex:1;padding:9px 0;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;border:none;cursor:pointer;background:${activeDept==='ornamental'?'rgba(249,115,22,0.15)':'var(--navy-3)'};color:${activeDept==='ornamental'?'#F97316':'var(--white-faint)'};border-right:1px solid var(--border)">
-      🔨 Ornamental &nbsp;<span style="font-size:9px;opacity:0.8">${ornProjects.length} jobs · ${fmt(ornTotal)}</span>
+    <button onclick="window._switchTab('ornamental')" style="flex:1;padding:14px 0;font-size:14px;font-weight:700;font-family:'DM Mono',monospace;border:none;cursor:pointer;
+      background:${activeDept==='ornamental'?'rgba(249,115,22,0.22)':'var(--navy-3)'};
+      color:${activeDept==='ornamental'?'#FF8C3A':'rgba(255,255,255,0.35)'};
+      border-right:1px solid var(--border);
+      border-bottom:${activeDept==='ornamental'?'2px solid #F97316':'2px solid transparent'}">
+      🔨 Ornamental
+      <div style="font-size:11px;font-weight:600;margin-top:3px;opacity:${activeDept==='ornamental'?'1':'0.5'}">${ornProjects.length} jobs &nbsp;·&nbsp; ${fmt(ornTotal)}</div>
     </button>
-    <button onclick="window._switchTab('structural')" style="flex:1;padding:9px 0;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;border:none;cursor:pointer;background:${activeDept==='structural'?'rgba(59,130,246,0.15)':'var(--navy-3)'};color:${activeDept==='structural'?'#3B82F6':'var(--white-faint)'}">
-      🏗️ Structural &nbsp;<span style="font-size:9px;opacity:0.8">${strProjects.length} jobs · ${fmt(strTotal)}</span>
+    <button onclick="window._switchTab('structural')" style="flex:1;padding:14px 0;font-size:14px;font-weight:700;font-family:'DM Mono',monospace;border:none;cursor:pointer;
+      background:${activeDept==='structural'?'rgba(59,130,246,0.22)':'var(--navy-3)'};
+      color:${activeDept==='structural'?'#60A5FA':'rgba(255,255,255,0.35)'};
+      border-bottom:${activeDept==='structural'?'2px solid #3B82F6':'2px solid transparent'}">
+      🏗️ Structural
+      <div style="font-size:11px;font-weight:600;margin-top:3px;opacity:${activeDept==='structural'?'1':'0.5'}">${strProjects.length} jobs &nbsp;·&nbsp; ${fmt(strTotal)}</div>
     </button>
   </div>`;
 
