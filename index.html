@@ -3739,6 +3739,11 @@ function buildAsanaInflows() {
       if (p.fabricationDraw>0){ var d1=new Date(dueDate); d1.setDate(d1.getDate()-60); allDraws.push({amt:p.fabricationDraw,date:d1}); }
       if (p.installDraw>0)    { var d2=new Date(dueDate); d2.setDate(d2.getDate()-30); allDraws.push({amt:p.installDraw,date:d2}); }
       if (p.finalPayment>0)   { var d3=new Date(dueDate); d3.setDate(d3.getDate()+30); allDraws.push({amt:p.finalPayment,date:d3}); }
+      // If named draws don't cover full contract value, add remainder at final payment date
+      var drawsSum = (p.fabricationDraw||0) + (p.installDraw||0) + (p.finalPayment||0);
+      var gap = p.contractValue - drawsSum;
+      if (gap > 1) { var dgap=new Date(dueDate); dgap.setDate(dgap.getDate()+30); allDraws.push({amt:gap,date:dgap}); }
+      // Fallback: no draw fields at all
       if (!allDraws.length && p.contractValue>0){ var d4=new Date(dueDate); d4.setDate(d4.getDate()+30); allDraws.push({amt:p.contractValue,date:d4}); }
       getRemainingDraws(allDraws, invoiced).forEach(function(pmt){
         if (pmt.date < TODAY) return;
@@ -3791,6 +3796,11 @@ function buildAsanaInflowsForDept(dept) {
       if (p.fabricationDraw>0){ var d1=new Date(dueDate); d1.setDate(d1.getDate()-60); allDraws.push({amt:p.fabricationDraw,date:d1}); }
       if (p.installDraw>0)    { var d2=new Date(dueDate); d2.setDate(d2.getDate()-30); allDraws.push({amt:p.installDraw,date:d2}); }
       if (p.finalPayment>0)   { var d3=new Date(dueDate); d3.setDate(d3.getDate()+30); allDraws.push({amt:p.finalPayment,date:d3}); }
+      // If named draws don't cover full contract value, add remainder at final payment date
+      var drawsSum = (p.fabricationDraw||0) + (p.installDraw||0) + (p.finalPayment||0);
+      var gap = p.contractValue - drawsSum;
+      if (gap > 1) { var dgap=new Date(dueDate); dgap.setDate(dgap.getDate()+30); allDraws.push({amt:gap,date:dgap}); }
+      // Fallback: no draw fields at all
       if (!allDraws.length && p.contractValue>0){ var d4=new Date(dueDate); d4.setDate(d4.getDate()+30); allDraws.push({amt:p.contractValue,date:d4}); }
       getRemainingDraws(allDraws, invoiced).forEach(function(pmt){
         if (pmt.date < TODAY) return;
