@@ -2461,14 +2461,14 @@ function renderRevenue() {
 
 // Add expectedDate + payPattern to each invoice (null = not set)
 const arInvoices = [
-  {id:'INV-2401',client:'Meridian Commercial',   project:'Meridian #4',            amt:112500,inv:'2026-02-03',due:'2026-03-05',bucket:'current', contact:'Dave Marsh',     expectedDate:null,payPattern:'standard', notes:'Net 30 terms. No issues reported.'},
-  {id:'INV-2398',client:'Hartwell Family Trust',  project:'Hartwell Residence',     amt:48200, inv:'2026-01-28',due:'2026-02-27',bucket:'current', contact:'Linda Hartwell', expectedDate:null,payPattern:'standard', notes:'Final invoice. Awaiting walkthrough sign-off.'},
-  {id:'INV-2391',client:'Lakewood HOA',           project:'Lakewood Apartments',    amt:42800, inv:'2026-01-15',due:'2026-02-14',bucket:'1-30',    contact:'Tom Reyes',      expectedDate:null,payPattern:'standard', notes:'9 days past due. Reminder sent Feb 20. Awaiting response.'},
-  {id:'INV-2384',client:'Clearwater Office Ptrs', project:'Clearwater Office Park', amt:34200, inv:'2026-01-08',due:'2026-02-07',bucket:'1-30',    contact:'Sarah Chen',     expectedDate:null,payPattern:'draw-17',  notes:'16 days past due. Left voicemail x2. Email sent Feb 18. Pays on draw schedule ~17th.'},
-  {id:'INV-2376',client:'Sunridge Community HOA', project:'Sunridge HOA Phase 1',   amt:67400, inv:'2025-12-20',due:'2026-01-19',bucket:'31-60',   contact:'Mike Torres',    expectedDate:null,payPattern:'standard', notes:'35 days past due. Dispute over punch list. Call scheduled Feb 25.'},
-  {id:'INV-2368',client:'Thompson Construction',  project:'Thompson New Build',      amt:22000, inv:'2025-12-10',due:'2026-01-09',bucket:'31-60',   contact:'Jeff Thompson',  expectedDate:null,payPattern:'standard', notes:'45 days past due. Partial $8k promised by Feb 28.'},
-  {id:'INV-2341',client:'Verde Valley Commercial',project:'Verde Valley Reroof',     amt:38900, inv:'2025-11-18',due:'2025-12-18',bucket:'60+',     contact:'Pat Nguyen',     expectedDate:null,payPattern:'slow',    notes:'67 days past due. ESCALATE. Consider formal demand letter. Last contact Jan 15.'},
-  {id:'INV-2318',client:'Ironwood Plaza LLC',     project:'Ironwood Plaza Phase 2',  amt:18400, inv:'2025-11-01',due:'2025-12-01',bucket:'60+',     contact:'Carl Webb',      expectedDate:null,payPattern:'standard', notes:'84 days past due. Formal demand letter sent Feb 1. No response. Consider collections.'},
+  {id:'INV-2401',client:'Meridian Commercial',   project:'Meridian #4',            amt:112500,inv:'2026-02-03',due:'2026-03-05',bucket:'current', contact:'Dave Marsh',     expectedDate:null,type:'ar',payPattern:'standard', notes:'Net 30 terms. No issues reported.'},
+  {id:'INV-2398',client:'Hartwell Family Trust',  project:'Hartwell Residence',     amt:48200, inv:'2026-01-28',due:'2026-02-27',bucket:'current', contact:'Linda Hartwell', expectedDate:null,type:'ar',payPattern:'standard', notes:'Final invoice. Awaiting walkthrough sign-off.'},
+  {id:'INV-2391',client:'Lakewood HOA',           project:'Lakewood Apartments',    amt:42800, inv:'2026-01-15',due:'2026-02-14',bucket:'1-30',    contact:'Tom Reyes',      expectedDate:null,type:'ar',payPattern:'standard', notes:'9 days past due. Reminder sent Feb 20. Awaiting response.'},
+  {id:'INV-2384',client:'Clearwater Office Ptrs', project:'Clearwater Office Park', amt:34200, inv:'2026-01-08',due:'2026-02-07',bucket:'1-30',    contact:'Sarah Chen',     expectedDate:null,type:'ar',payPattern:'draw-17',  notes:'16 days past due. Left voicemail x2. Email sent Feb 18. Pays on draw schedule ~17th.'},
+  {id:'INV-2376',client:'Sunridge Community HOA', project:'Sunridge HOA Phase 1',   amt:67400, inv:'2025-12-20',due:'2026-01-19',bucket:'31-60',   contact:'Mike Torres',    expectedDate:null,type:'ar',payPattern:'standard', notes:'35 days past due. Dispute over punch list. Call scheduled Feb 25.'},
+  {id:'INV-2368',client:'Thompson Construction',  project:'Thompson New Build',      amt:22000, inv:'2025-12-10',due:'2026-01-09',bucket:'31-60',   contact:'Jeff Thompson',  expectedDate:null,type:'ar',payPattern:'standard', notes:'45 days past due. Partial $8k promised by Feb 28.'},
+  {id:'INV-2341',client:'Verde Valley Commercial',project:'Verde Valley Reroof',     amt:38900, inv:'2025-11-18',due:'2025-12-18',bucket:'60+',     contact:'Pat Nguyen',     expectedDate:null,type:'ar',payPattern:'slow',    notes:'67 days past due. ESCALATE. Consider formal demand letter. Last contact Jan 15.'},
+  {id:'INV-2318',client:'Ironwood Plaza LLC',     project:'Ironwood Plaza Phase 2',  amt:18400, inv:'2025-11-01',due:'2025-12-01',bucket:'60+',     contact:'Carl Webb',      expectedDate:null,type:'ar',payPattern:'standard', notes:'84 days past due. Formal demand letter sent Feb 1. No response. Consider collections.'},
 ];
 
 const PAY_PATTERNS = {
@@ -2555,6 +2555,7 @@ function buildARRows() {
     else if (arSortCol==='due')      v = (a.due||'')<(b.due||'')?-1:(a.due||'')>(b.due||'')?1:0;
     else if (arSortCol==='expected') v = (a.expectedDate||'9999')<(b.expectedDate||'9999')?-1:(a.expectedDate||'9999')>(b.expectedDate||'9999')?1:0;
     else if (arSortCol==='bucket')   { v=(bucketOrder[a.bucket]||9)-(bucketOrder[b.bucket]||9); if(v===0) v=b.amt-a.amt; }
+    else if (arSortCol==='type')     v = (a.type||'ar').localeCompare(b.type||'ar');
     return v * arSortDir;
   });
   return sorted.map(function(inv) {
@@ -2570,8 +2571,12 @@ function buildARRows() {
     var editBtn = '<button onclick="openAREdit(\''+inv.id+'\')" '
       +'style="background:var(--navy-4);border:1px solid var(--border);color:var(--white-faint);'
       +'padding:5px 10px;border-radius:4px;font-size:11px;'+mono+';cursor:pointer">\u270e Edit</button>';
+    var isDeposit = inv.type === 'deposit';
+    var typeCell = isDeposit
+      ? '<td><span class="pill" style="background:rgba(139,92,246,0.15);color:#8B5CF6;border:1px solid rgba(139,92,246,0.4);font-size:10px;white-space:nowrap">&#9670; DEP</span></td>'
+      : '<td><span class="pill" style="background:rgba(16,185,129,0.1);color:#10B981;border:1px solid rgba(16,185,129,0.3);font-size:10px">AR</span></td>';
     return '<tr>'
-      +'<td class="b" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px">'+inv.client+'</td>'
+      +'<td class="b" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px">'+inv.client+'</td>'
       +'<td class="m" style="font-size:12px">'+inv.id+'</td>'
       +'<td class="m" style="font-size:12px;'+mono+';color:'+invDateCol+'">'+inv.inv+'</td>'
       +'<td class="m" style="color:'+bc+';font-size:15px;font-weight:700">'+fmt(inv.amt)+'</td>'
@@ -2579,6 +2584,7 @@ function buildARRows() {
       +expCell
       +'<td class="m" style="color:'+(daysOver>0?bc:'var(--white-faint)')+';font-size:13px;font-weight:600">'+daysStr+'</td>'
       +'<td><span class="pill" style="background:'+bc+'22;color:'+bc+';border:1px solid '+bc+'44;font-size:11px">'+bl+'</span></td>'
+      +typeCell
       +'<td>'+editBtn+'</td>'
     +'</tr>';
   }).join('');
@@ -2590,7 +2596,7 @@ function sortARBy(col) {
   arSortCol = col;
   var tbody = document.getElementById('ar-table-body');
   if (tbody) tbody.innerHTML = buildARRows();
-  ['client','id','invdate','amt','due','expected','bucket'].forEach(function(c) {
+  ['client','id','invdate','amt','due','expected','bucket','type'].forEach(function(c) {
     var th = document.getElementById('ar-th-'+c);
     if (!th) return;
     th.querySelector('.ar-sort-arrow').textContent = arSortCol===c ? (arSortDir===1?' ▲':' ▼') : ' ⇅';
@@ -2612,13 +2618,23 @@ function renderAR() {
   const el = document.getElementById('ar-content');
   if (!el) return;
 
-  const cur   = arInvoices.filter(i => i.bucket === 'current');
-  const a130  = arInvoices.filter(i => i.bucket === '1-30');
-  const a3160 = arInvoices.filter(i => i.bucket === '31-60');
-  const a60p  = arInvoices.filter(i => i.bucket === '60+');
-  const total = arInvoices.reduce((s,i) => s + i.amt, 0);
-  const past  = arInvoices.filter(i => i.bucket !== 'current').reduce((s,i) => s + i.amt, 0);
+  // ── Split true AR vs deposit invoices ──────────────────────────
+  const trueAR   = arInvoices.filter(i => i.type !== 'deposit');
+  const deposits = arInvoices.filter(i => i.type === 'deposit');
+
+  const cur   = trueAR.filter(i => i.bucket === 'current');
+  const a130  = trueAR.filter(i => i.bucket === '1-30');
+  const a3160 = trueAR.filter(i => i.bucket === '31-60');
+  const a60p  = trueAR.filter(i => i.bucket === '60+');
+  const total = trueAR.reduce((s,i) => s + i.amt, 0);
+  const past  = trueAR.filter(i => i.bucket !== 'current').reduce((s,i) => s + i.amt, 0);
   const crit  = a60p.reduce((s,i) => s + i.amt, 0);
+
+  // Deposit totals (60+ day alerts apply equally)
+  const depTotal = deposits.reduce((s,i) => s + i.amt, 0);
+  const depPast  = deposits.filter(i => i.bucket !== 'current').reduce((s,i) => s + i.amt, 0);
+  const dep60p   = deposits.filter(i => i.bucket === '60+');
+  const depCrit  = dep60p.reduce((s,i) => s + i.amt, 0);
 
   const badge = document.getElementById('ar-badge');
   if (badge) badge.textContent = a130.length + a3160.length + a60p.length;
@@ -2735,12 +2751,12 @@ function renderAR() {
   }
 
   // Compute real average days outstanding
-  var totalDaysOut = arInvoices.reduce(function(s, i) {
+  var totalDaysOut = trueAR.reduce(function(s, i) {
     var dueD = new Date(i.due);
     var days = Math.max(0, Math.round((TODAY - dueD) / 86400000));
     return s + days;
   }, 0);
-  var avgDays = arInvoices.length > 0 ? Math.round(totalDaysOut / arInvoices.length) : 0;
+  var avgDays = trueAR.length > 0 ? Math.round(totalDaysOut / trueAR.length) : 0;
 
   // ── Expected in Next 30 Days ──────────────────────────────────────
   // Uses expectedDate if set on the invoice, otherwise falls back to due date
@@ -2748,7 +2764,7 @@ function renderAR() {
   var n30End   = new Date(n30Start); n30End.setDate(n30End.getDate() + 30);
   var next30Amt   = 0;
   var next30Count = 0;
-  arInvoices.forEach(function(inv) {
+  trueAR.forEach(function(inv) {
     var rawDate = inv.expectedDate || inv.due;
     if (!rawDate) return;
     var d = new Date(rawDate + 'T12:00:00');
@@ -2766,25 +2782,40 @@ function renderAR() {
     +'<table style="border-collapse:collapse;width:100%"><thead><tr>'
       +arTh('client','Client')+arTh('id','Invoice')+arTh('invdate','Inv Date')
       +arTh('amt','Amount')+arTh('due','Due Date')+arTh('expected','Expected')
-      +arTh('bucket','Aging')
+      +arTh('bucket','Aging')+arTh('type','Type')
       +'<th style="position:sticky;top:0;background:var(--navy-2);z-index:2"></th>'
     +'</tr></thead>'
     +'<tbody id="ar-table-body">'+buildARRows()+'</tbody></table>'
     +'</div></div>';
 
   el.innerHTML =
-    (a60p.length ? `<div class="alert r mb16"><div class="alert-icon">&#128680;</div><div><div class="alert-title">${a60p.length} invoices 60+ days past due &mdash; ${fmt(crit)} at collection risk</div><div class="alert-body">Immediate escalation required. Use the &#9998; Edit button on each invoice to set expected payment dates and update collection status.</div></div></div>` : '') +
-    `<div class="g5 mb16">
-      <div class="card-sm"><div class="kl">Total AR Outstanding</div><div class="kv green">${fmt(total)}</div><div class="ks">${arInvoices.length} open invoices</div></div>
-      <div class="card-sm"><div class="kl">Past Due Total</div><div class="kv red">${fmt(past)}</div><div class="ks">${arInvoices.filter(i=>i.bucket!=='current').length} invoices overdue</div></div>
-      <div class="card-sm"><div class="kl">60+ Day Risk</div><div class="kv red">${fmt(crit)}</div><div class="ks">${a60p.length} invoices &mdash; escalate</div></div>
-      <div class="card-sm" style="border-color:rgba(16,185,129,0.35)">
-        <div class="kl" style="color:#10B981">&#9651; Expected Next 30 Days</div>
-        <div class="kv green">${fmt(next30Amt)}</div>
-        <div class="ks">${next30Count} invoice${next30Count!==1?'s':''} &mdash; ${hasExpectedDates?'exp. &amp; due dates':'due dates only'}</div>
+    (a60p.length || dep60p.length ? `<div class="alert r mb16"><div class="alert-icon">&#128680;</div><div><div class="alert-title">${a60p.length + dep60p.length} invoice${(a60p.length+dep60p.length)!==1?'s':''} 60+ days past due &mdash; ${fmt(crit + depCrit)} at collection risk</div><div class="alert-body">Immediate escalation required. Use the &#9998; Edit button on each invoice to set expected payment dates and update collection status.</div></div></div>` : '') +
+    `<div style="margin-bottom:6px;display:flex;align-items:center;gap:8px">
+        <div style="font-size:9px;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:.1em;color:var(--white-faint);text-transform:uppercase">True AR</div>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">${trueAR.length} invoices</div>
       </div>
-      <div class="card-sm"><div class="kl">Avg Days Outstanding</div><div class="kv amber">${avgDays}d</div><div class="ks">Target: under 30 days</div></div>
-    </div>` +
+      <div class="g5 mb12">
+        <div class="card-sm"><div class="kl">True AR Outstanding</div><div class="kv green">${fmt(total)}</div><div class="ks">${trueAR.length} invoices</div></div>
+        <div class="card-sm"><div class="kl">Past Due Total</div><div class="kv red">${fmt(past)}</div><div class="ks">${trueAR.filter(i=>i.bucket!=='current').length} invoices overdue</div></div>
+        <div class="card-sm"><div class="kl">60+ Day Risk</div><div class="kv red">${fmt(crit)}</div><div class="ks">${a60p.length} invoices &mdash; escalate</div></div>
+        <div class="card-sm" style="border-color:rgba(16,185,129,0.35)">
+          <div class="kl" style="color:#10B981">&#9651; Expected Next 30 Days</div>
+          <div class="kv green">${fmt(next30Amt)}</div>
+          <div class="ks">${next30Count} invoice${next30Count!==1?'s':''} &mdash; ${hasExpectedDates?'exp. &amp; due dates':'due dates only'}</div>
+        </div>
+        <div class="card-sm"><div class="kl">Avg Days Outstanding</div><div class="kv amber">${avgDays}d</div><div class="ks">Target: under 30 days</div></div>
+      </div>
+      <div style="margin-bottom:6px;display:flex;align-items:center;gap:8px">
+        <div style="font-size:9px;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:.1em;color:#8B5CF6;text-transform:uppercase">&#9670; Deposits Held</div>
+        <div style="flex:1;height:1px;background:rgba(139,92,246,0.3)"></div>
+        <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">${deposits.length} invoice${deposits.length!==1?'s':''}</div>
+      </div>
+      <div class="g3 mb16">
+        <div class="card-sm" style="border-color:rgba(139,92,246,0.35)"><div class="kl" style="color:#8B5CF6">Deposits Outstanding</div><div class="kv" style="color:#8B5CF6">${deposits.length > 0 ? fmt(depTotal) : '—'}</div><div class="ks">${deposits.length} deposit invoice${deposits.length!==1?'s':''}</div></div>
+        <div class="card-sm" style="border-color:rgba(139,92,246,0.25)"><div class="kl">Deposits Past Due</div><div class="kv ${depPast>0?'red':''}" style="${depPast===0?'color:var(--white-faint)':''}">${depPast > 0 ? fmt(depPast) : '—'}</div><div class="ks">${deposits.filter(i=>i.bucket!=='current').length} overdue</div></div>
+        <div class="card-sm" style="border-color:rgba(139,92,246,0.25)"><div class="kl">Deposits 60+ Day Risk</div><div class="kv ${depCrit>0?'red':''}" style="${depCrit===0?'color:var(--white-faint)':''}">${depCrit > 0 ? fmt(depCrit) : '—'}</div><div class="ks">${dep60p.length} invoices &mdash; escalate</div></div>
+      </div>` +
     allInvoicesTable +
     forecastCard +
     `<div class="g2 mb16" style="align-items:start">
@@ -2823,8 +2854,11 @@ function renderDashboard() {
   var critTotal    = critBills.reduce(function(s,b){ return s+b.amt; }, 0);
   var totalPayable = activeBills.reduce(function(s,b){ return s+b.amt; }, 0);
 
-  var totalAR      = arInvoices.reduce(function(s,i){ return s+i.amt; }, 0);
-  var overdueAR    = arInvoices.filter(function(i){ return i.bucket==='1-30'||i.bucket==='31-60'||i.bucket==='60+'; });
+  var trueARInv    = arInvoices.filter(function(i){ return i.type !== 'deposit'; });
+  var depInv       = arInvoices.filter(function(i){ return i.type === 'deposit'; });
+  var totalAR      = trueARInv.reduce(function(s,i){ return s+i.amt; }, 0);
+  var totalDep     = depInv.reduce(function(s,i){ return s+i.amt; }, 0);
+  var overdueAR    = trueARInv.filter(function(i){ return i.bucket==='1-30'||i.bucket==='31-60'||i.bucket==='60+'; });
   var overdueAmt   = overdueAR.reduce(function(s,i){ return s+i.amt; }, 0);
   var overdueCount = overdueAR.length;
 
@@ -3041,7 +3075,7 @@ function renderDashboard() {
     + '<div class="g4 mb20">'
       + kpi('&#128680;', 'Critical Bills',    fmt(critTotal),          critBills.length+' vendor'+(critBills.length!==1?'s':'')+' — pay now',   '#F43F5E', critBills.length>0)
       + kpi('&#9888;&#65039;', 'AR Overdue',  fmt(overdueAmt),         overdueCount+' invoice'+(overdueCount!==1?'s':'')+' past due',           '#F43F5E', overdueAmt>0)
-      + kpi('&#128176;', 'Total AR',          fmt(totalAR),            arInvoices.length+' open invoices',                                      '#3B82F6', false)
+      + kpi('&#128176;', 'True AR',            fmt(totalAR),            trueARInv.length+' invoices · '+fmt(totalDep)+' deposits',               '#3B82F6', false)
       + kpi('&#128203;', 'Total Payable',     fmt(totalPayable),       activeBills.length+' active bills',                                      '#8B5CF6', false)
     + '</div>'
 
@@ -4282,13 +4316,16 @@ function render13Week() {
   var totalInflow13  = allInflow.reduce(function(s,v){return s+v;},0);
   var totalOutflow13 = allOutflow.reduce(function(s,v){return s+v;},0);
 
-  // AR by bucket from live data
-  var arCurrent = arInvoices.filter(function(i){return i.bucket==='current';}).reduce(function(s,i){return s+i.amt;},0);
-  var ar130     = arInvoices.filter(function(i){return i.bucket==='1-30';}).reduce(function(s,i){return s+i.amt;},0);
-  var ar3160    = arInvoices.filter(function(i){return i.bucket==='31-60';}).reduce(function(s,i){return s+i.amt;},0);
-  var ar60p     = arInvoices.filter(function(i){return i.bucket==='60+';}).reduce(function(s,i){return s+i.amt;},0);
-  var arTotal   = arCurrent + ar130 + ar3160 + ar60p;
-  var pipeline  = Math.max(0, totalInflow13 - arTotal);
+  // AR by bucket — true AR only for Sankey (deposits tracked separately)
+  var trueAROnly = arInvoices.filter(function(i){ return i.type !== 'deposit'; });
+  var depOnly    = arInvoices.filter(function(i){ return i.type === 'deposit'; });
+  var arCurrent  = trueAROnly.filter(function(i){return i.bucket==='current';}).reduce(function(s,i){return s+i.amt;},0);
+  var ar130      = trueAROnly.filter(function(i){return i.bucket==='1-30';}).reduce(function(s,i){return s+i.amt;},0);
+  var ar3160     = trueAROnly.filter(function(i){return i.bucket==='31-60';}).reduce(function(s,i){return s+i.amt;},0);
+  var ar60p      = trueAROnly.filter(function(i){return i.bucket==='60+';}).reduce(function(s,i){return s+i.amt;},0);
+  var arTotal    = arCurrent + ar130 + ar3160 + ar60p;
+  var depTotal13 = depOnly.reduce(function(s,i){return s+i.amt;},0);
+  var pipeline   = Math.max(0, totalInflow13 - arTotal - depTotal13);
 
   // Outflow breakdown over 13 weeks
   var totalPayroll = allPay.reduce(function(s,p){return s+p;},0) * biweeklyPayroll;
@@ -4367,6 +4404,7 @@ function render13Week() {
     {label:'AR Current',    val: Math.max(100, arCurrent)},
     {label:'AR 1-30d',      val: Math.max(100, ar130)},
     {label:'AR 31-60d',     val: Math.max(100, ar3160)},
+    {label:'Deposits',      val: Math.max(100, depTotal13)},
     {label:'Pipeline',      val: Math.max(100, pipeline + ar60p)},
   ];
   var destinations = [
