@@ -2764,7 +2764,7 @@ function renderAR() {
   var n30End   = new Date(n30Start); n30End.setDate(n30End.getDate() + 30);
   var next30Amt   = 0;
   var next30Count = 0;
-  trueAR.forEach(function(inv) {
+  arInvoices.forEach(function(inv) {
     var rawDate = inv.expectedDate || inv.due;
     if (!rawDate) return;
     var d = new Date(rawDate + 'T12:00:00');
