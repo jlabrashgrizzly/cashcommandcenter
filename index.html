@@ -2760,15 +2760,18 @@ function renderAR() {
 
   // ── Expected in Next 30 Days ──────────────────────────────────────
   // Uses expectedDate if set on the invoice, otherwise falls back to due date
-  var n30Start = new Date(TODAY); n30Start.setHours(0,0,0,0);
-  var n30End   = new Date(n30Start); n30End.setDate(n30End.getDate() + 30);
-  var next30Amt   = 0;
-  var next30Count = 0;
+  var n30End = new Date(TODAY); n30End.setHours(0,0,0,0); n30End.setDate(n30End.getDate() + 30);
+  var next30Amt      = 0;
+  var next30Count    = 0;
+  var next30Overdue  = 0;  // expected date is in the past but not yet collected
   arInvoices.forEach(function(inv) {
     var rawDate = inv.expectedDate || inv.due;
     if (!rawDate) return;
     var d = new Date(rawDate + 'T12:00:00');
-    if (d >= n30Start && d <= n30End) { next30Amt += (inv.amt || 0); next30Count++; }
+    var todayMid = new Date(TODAY); todayMid.setHours(0,0,0,0);
+    // Include anything expected up to today+30 — no lower bound cutoff so
+    // overdue-expected invoices (expected date already passed) still count
+    if (d <= n30End) { next30Amt += (inv.amt || 0); next30Count++; if (d < todayMid) next30Overdue++; }
   });
   var hasExpectedDates = arInvoices.some(function(i){ return !!i.expectedDate; });
 
@@ -2802,7 +2805,7 @@ function renderAR() {
         <div class="card-sm" style="border-color:rgba(16,185,129,0.35)">
           <div class="kl" style="color:#10B981">&#9651; Expected Next 30 Days</div>
           <div class="kv green">${fmt(next30Amt)}</div>
-          <div class="ks">${next30Count} invoice${next30Count!==1?'s':''} &mdash; ${hasExpectedDates?'exp. &amp; due dates':'due dates only'}</div>
+          <div class="ks">${next30Count} invoice${next30Count!==1?'s':''} ${next30Overdue>0?'<span style=\"color:#F59E0B\">('+next30Overdue+' past expected)</span>':''} &mdash; ${hasExpectedDates?'exp. &amp; due dates':'due dates only'}</div>
         </div>
         <div class="card-sm"><div class="kl">Avg Days Outstanding</div><div class="kv amber">${avgDays}d</div><div class="ks">Target: under 30 days</div></div>
       </div>
