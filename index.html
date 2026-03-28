@@ -3800,30 +3800,32 @@ function tellerConnect() {
   }
   tellerInstance = window.TellerConnect.setup({
     applicationId: TELLER_APP_ID,
-    environment:   'development',
     products:      ['balance'],
     onInit: function() {
       showSyncStatus('Teller Connect loading...', 'var(--accent)');
     },
     onSuccess: function(enrollment) {
+      console.log('Teller onSuccess payload:', JSON.stringify(enrollment));
       showSyncStatus('Bank connected! Saving...', 'var(--accent)');
-      // Store token via Apps Script
+      var enrollmentId = enrollment.enrollment ? enrollment.enrollment.id : enrollment.id;
+      var instName     = enrollment.enrollment ? enrollment.enrollment.institution.name : (enrollment.institution ? enrollment.institution.name : 'Unknown');
+      var accessToken  = enrollment.accessToken;
       fetch(SHEETS_URL + '?action=teller_store_token'
-        + '&enrollmentId=' + encodeURIComponent(enrollment.enrollment.id)
-        + '&accessToken='  + encodeURIComponent(enrollment.accessToken)
-        + '&institution='  + encodeURIComponent(enrollment.enrollment.institution.name)
+        + '&enrollmentId=' + encodeURIComponent(enrollmentId)
+        + '&accessToken='  + encodeURIComponent(accessToken)
+        + '&institution='  + encodeURIComponent(instName)
         + '&t=' + Date.now())
         .then(function(r){ return r.json(); })
         .then(function(data) {
           if (!data.ok) throw new Error(data.error || 'Store failed');
-          // Add to local enrollments
+          // Add to local enrollments (use vars already extracted above)
           tellerEnrollments.push({
-            enrollmentId: enrollment.enrollment.id,
-            institution:  enrollment.enrollment.institution.name
+            enrollmentId: enrollmentId,
+            institution:  instName
           });
           tellerConfigured = true;
           showTellerStatus();
-          showSyncStatus('Connected: ' + enrollment.enrollment.institution.name, 'var(--green)');
+          showSyncStatus('Connected: ' + instName, 'var(--green)');
           // Auto-refresh balances after connecting
           tellerRefresh();
         })
