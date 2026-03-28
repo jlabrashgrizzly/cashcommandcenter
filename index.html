@@ -3326,8 +3326,13 @@ function loadFromSheets() {
       if (data.billConfigured)  { billConfigured  = true; }
       if (data.asanaConfigured) { asanaConfigured = true; }
       if (data.tellerEnrollments && data.tellerEnrollments.length) {
-        tellerEnrollments = data.tellerEnrollments;
-        tellerConfigured  = true;
+        // UI-safe list (no tokens)
+        tellerEnrollments = data.tellerEnrollments.map(function(e) {
+          return { enrollmentId: e.enrollmentId, institution: e.institution };
+        });
+        // Full list with tokens for Netlify function calls
+        tellerEnrollmentsFull = data.tellerEnrollments;
+        tellerConfigured = true;
       }
       showJNSyncButtons();
       showBillSyncButtons();
@@ -3465,9 +3470,10 @@ function saveFullAR() {
 var jnConfigured     = false;
 var billConfigured   = false;
 var asanaConfigured  = false;
-var tellerConfigured = false;
-var tellerEnrollments = [];   // [{ enrollmentId, institution, accessToken }]
-var tellerLastSync    = '';   // human-readable last sync time
+var tellerConfigured      = false;
+var tellerEnrollments     = [];   // [{ enrollmentId, institution }] — safe to use in UI
+var tellerEnrollmentsFull = [];   // [{ enrollmentId, institution, accessToken }] — used for Netlify function calls only
+var tellerLastSync        = '';   // human-readable last sync time
 var jnSyncing        = false;
 var billSyncing      = false;
 var asanaSyncing     = false;
@@ -3762,8 +3768,11 @@ function triggerAsanaSync() {
 }
 
 // ── TELLER INTEGRATION ────────────────────────────────────────────
-var TELLER_APP_ID = 'app_pqdlgvqa2bv1virlra000';
-var tellerInstance = null;
+var TELLER_APP_ID    = 'app_pqdlgvqa2bv1virlra000';
+// Netlify function URL — update this after deploying to Netlify
+// e.g. 'https://your-site.netlify.app/.netlify/functions/teller'
+var TELLER_FUNC_URL  = '/.netlify/functions/teller';
+var tellerInstance   = null;
 
 function showTellerStatus() {
   var dot   = document.getElementById('teller-conn-dot');
@@ -3841,29 +3850,44 @@ function tellerConnect() {
 }
 
 function tellerRefresh() {
-  if (!SHEETS_URL) { showSyncStatus('No Sheets URL configured', 'var(--amber)'); return; }
+  if (!tellerEnrollments.length) {
+    showSyncStatus('No banks connected yet — click Connect Bank first', 'var(--amber)');
+    return;
+  }
   var btn = document.getElementById('teller-refresh-btn');
   if (btn) { btn.textContent = '\u23f3 Refreshing...'; btn.style.opacity = '0.6'; }
   var msg = document.getElementById('teller-status-msg');
   if (msg) msg.textContent = 'Fetching live balances...';
   showSyncStatus('Refreshing Teller balances...', 'var(--accent)');
 
-  fetch(SHEETS_URL + '?action=teller_get_accounts&t=' + Date.now())
+  // Build token list — accessTokens are stored in Apps Script, retrieved on load
+  // We pass the full enrollment list (with tokens) to the Netlify function
+  // Tokens come from Apps Script on loadFromSheets — stored in tellerEnrollmentsFull
+  var tokenList = (typeof tellerEnrollmentsFull !== 'undefined' && tellerEnrollmentsFull.length)
+    ? tellerEnrollmentsFull
+    : tellerEnrollments;
+
+  var url = TELLER_FUNC_URL + '?action=get_accounts'
+    + '&tokens=' + encodeURIComponent(JSON.stringify(tokenList))
+    + '&t=' + Date.now();
+
+  fetch(url)
     .then(function(r){ return r.json(); })
     .then(function(data) {
       if (!data.ok) throw new Error(data.error || 'Refresh failed');
       if (data.accounts && data.accounts.length) {
-        // Merge Teller live accounts into plaidAccounts
-        // Keep any manually-added accounts that have no tellerAccountId
         var manual = plaidAccounts.filter(function(a){ return !a.tellerId; });
         plaidAccounts = manual.concat(data.accounts);
-        saveAccounts();
+        if (SHEETS_URL) saveAccounts();
+      }
+      if (data.errors && data.errors.length) {
+        console.warn('Teller partial errors:', data.errors);
       }
       var now = new Date();
       tellerLastSync = (now.getHours() % 12 || 12) + ':' + String(now.getMinutes()).padStart(2,'0') + ' ' + (now.getHours() >= 12 ? 'PM' : 'AM');
       tellerConfigured = true;
       showTellerStatus();
-      showSyncStatus('Balances updated from Teller', 'var(--green)');
+      showSyncStatus('Balances updated — ' + data.count + ' accounts', 'var(--green)');
       renderAccounts();
       renderDashboard();
     })
