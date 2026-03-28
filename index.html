@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cash Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.teller.io/connect/connect.js"></script>
 <style>
   :root {
     --navy:#0B1120; --navy-2:#111827; --navy-3:#1a2540; --navy-4:#1e2d4a; --navy-5:#243357;
@@ -461,7 +462,7 @@
     <div class="conn-item" id="bill-conn-item"><div class="conn-dot" id="bill-conn-dot"></div>Bill.com<span class="conn-label" id="bill-conn-label">CSV</span></div>
     <div class="conn-item" id="jn-conn-item"><div class="conn-dot" id="jn-conn-dot"></div>JobNimbus<span class="conn-label" id="jn-conn-label">CSV</span></div>
     <div class="conn-item" id="asana-conn-item"><div class="conn-dot" id="asana-conn-dot"></div>Asana<span class="conn-label" id="asana-conn-label">MOCK</span></div>
-    <div class="conn-item"><div class="conn-dot"></div>Plaid<span class="conn-label">MOCK</span></div>
+    <div class="conn-item" id="teller-conn-item"><div class="conn-dot" id="teller-conn-dot"></div>Teller<span class="conn-label" id="teller-conn-label">MOCK</span></div>
   </div>
   <div style="padding:10px;display:flex;gap:6px;border-top:1px solid var(--border);margin-top:8px">
     <button onclick="lockApp()" style="flex:1;background:var(--navy-3);border:1px solid var(--border);color:var(--white-faint);padding:7px;border-radius:6px;font-size:10px;font-family:'DM Mono',monospace;cursor:pointer;">&#x1F512; Lock</button>
@@ -1366,16 +1367,35 @@ function renderAccounts() {
     + '</div>';
 
   var addBtn = '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px">'
-    + '<button onclick="openAcctEdit(null,\'depository\')" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">+ Add Bank Account</button>'
-    + '<button onclick="openAcctEdit(null,\'credit\')" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">+ Add Credit Account</button>'
+    + '<button onclick="tellerConnect()" id="teller-connect-btn" style="background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.35);color:#06B6D4;padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">⚡ Connect Bank</button>'
+    + '<button onclick="tellerRefresh()" id="teller-refresh-btn" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">↻ Refresh Balances</button>'
+    + '<button onclick="openAcctEdit(null,\'depository\')" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">+ Add Manual</button>'
     + '</div>';
+
+  var tellerStatus = tellerEnrollments.length > 0
+    ? (tellerLastSync ? 'Live · Last synced ' + tellerLastSync : 'Connected — click Refresh to sync')
+    : 'Click ⚡ Connect Bank to link Wells Fargo, Amex &amp; Capital One';
+  var tellerColor = tellerEnrollments.length > 0 ? 'var(--green)' : 'var(--white-faint)';
+
+  var enrollmentTags = '';
+  if (tellerEnrollments.length > 0) {
+    enrollmentTags = '<div style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px">';
+    for (var ei = 0; ei < tellerEnrollments.length; ei++) {
+      var enr = tellerEnrollments[ei];
+      enrollmentTags += '<div style="display:flex;align-items:center;gap:6px;background:var(--navy-3);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:10px;font-family:\'DM Mono\',monospace;color:var(--white-dim)">'
+        + '<span style="color:var(--green)">●</span> ' + enr.institution
+        + ' <span onclick="tellerDisconnect(\x27' + enr.enrollmentId + '\x27)" style="color:var(--red);cursor:pointer;font-size:9px;margin-left:4px">✕</span></div>';
+    }
+    enrollmentTags += '</div>';
+  }
 
   var banner = '<div class="plaid-banner" style="margin-bottom:12px">'
     + '<div class="plaid-logo"><svg width="18" height="18" fill="none" stroke="#06B6D4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg></div>'
-    + '<div style="flex:1"><div style="font-size:12px;font-weight:600">Manual Mode — Phase 1</div>'
-    + '<div style="font-size:10px;font-family:\'DM Mono\',monospace;color:var(--white-faint);margin-top:2px">Edit balances directly. Phase 2: Plaid auto-syncs Wells Fargo, Chase &amp; Amex in real time.</div></div>'
-    + '<span style="font-size:9px;font-family:\'DM Mono\',monospace;background:rgba(6,182,212,0.15);color:#06B6D4;border:1px solid rgba(6,182,212,0.3);padding:3px 8px;border-radius:20px;white-space:nowrap">'+plaidAccounts.length+' accounts</span>'
-    + '</div>';
+    + '<div style="flex:1"><div style="font-size:12px;font-weight:600">Teller — Live Bank Sync</div>'
+    + '<div style="font-size:10px;font-family:\'DM Mono\',monospace;color:' + tellerColor + ';margin-top:2px" id="teller-status-msg">' + tellerStatus + '</div></div>'
+    + '<span style="font-size:9px;font-family:\'DM Mono\',monospace;background:rgba(6,182,212,0.15);color:#06B6D4;border:1px solid rgba(6,182,212,0.3);padding:3px 8px;border-radius:20px;white-space:nowrap">' + plaidAccounts.length + ' accounts</span>'
+    + '</div>'
+    + enrollmentTags;
 
   function acard(a) {
     var isCredit = a.type === 'credit';
@@ -3306,9 +3326,14 @@ function loadFromSheets() {
       if (data.jnConfigured)    { jnConfigured    = true; }
       if (data.billConfigured)  { billConfigured  = true; }
       if (data.asanaConfigured) { asanaConfigured = true; }
+      if (data.tellerEnrollments && data.tellerEnrollments.length) {
+        tellerEnrollments = data.tellerEnrollments;
+        tellerConfigured  = true;
+      }
       showJNSyncButtons();
       showBillSyncButtons();
       showAsanaSyncButtons();
+      showTellerStatus();
       var ap = data.asanaProjects || [];
       if (ap.length) { asanaProjects = ap; }
       var s = data.settings || {};
@@ -3441,6 +3466,9 @@ function saveFullAR() {
 var jnConfigured     = false;
 var billConfigured   = false;
 var asanaConfigured  = false;
+var tellerConfigured = false;
+var tellerEnrollments = [];   // [{ enrollmentId, institution, accessToken }]
+var tellerLastSync    = '';   // human-readable last sync time
 var jnSyncing        = false;
 var billSyncing      = false;
 var asanaSyncing     = false;
@@ -3732,6 +3760,135 @@ function triggerAsanaSync() {
     if (btn) { btn.innerHTML = '&#x21BB; Sync Asana API'; btn.style.opacity = '1'; }
     setAsanaSyncStatus('Sync trigger error: '+err.message,'var(--red)');
   });
+}
+
+// ── TELLER INTEGRATION ────────────────────────────────────────────
+var TELLER_APP_ID = 'app_pqdlgvqa2bv1virlra000';
+var tellerInstance = null;
+
+function showTellerStatus() {
+  var dot   = document.getElementById('teller-conn-dot');
+  var label = document.getElementById('teller-conn-label');
+  if (tellerConfigured && dot) {
+    dot.style.background = 'var(--green)';
+    dot.style.boxShadow  = '0 0 4px var(--green)';
+    dot.style.animation  = 'none';
+  }
+  if (tellerConfigured && label) {
+    label.textContent        = 'LIVE';
+    label.style.background   = 'rgba(16,185,129,0.15)';
+    label.style.color        = '#10B981';
+    label.style.border       = '1px solid rgba(16,185,129,0.3)';
+    label.style.padding      = '1px 5px';
+    label.style.borderRadius = '3px';
+  }
+}
+
+function tellerConnect() {
+  if (!window.TellerConnect) {
+    showSyncStatus('Teller SDK not loaded — check your connection', 'var(--red)');
+    return;
+  }
+  if (!SHEETS_URL) {
+    showSyncStatus('No Sheets URL configured', 'var(--amber)');
+    return;
+  }
+  tellerInstance = window.TellerConnect.setup({
+    applicationId: TELLER_APP_ID,
+    environment:   'development',
+    products:      ['balance'],
+    onInit: function() {
+      showSyncStatus('Teller Connect loading...', 'var(--accent)');
+    },
+    onSuccess: function(enrollment) {
+      showSyncStatus('Bank connected! Saving...', 'var(--accent)');
+      // Store token via Apps Script
+      fetch(SHEETS_URL + '?action=teller_store_token'
+        + '&enrollmentId=' + encodeURIComponent(enrollment.enrollment.id)
+        + '&accessToken='  + encodeURIComponent(enrollment.accessToken)
+        + '&institution='  + encodeURIComponent(enrollment.enrollment.institution.name)
+        + '&t=' + Date.now())
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+          if (!data.ok) throw new Error(data.error || 'Store failed');
+          // Add to local enrollments
+          tellerEnrollments.push({
+            enrollmentId: enrollment.enrollment.id,
+            institution:  enrollment.enrollment.institution.name
+          });
+          tellerConfigured = true;
+          showTellerStatus();
+          showSyncStatus('Connected: ' + enrollment.enrollment.institution.name, 'var(--green)');
+          // Auto-refresh balances after connecting
+          tellerRefresh();
+        })
+        .catch(function(err) {
+          showSyncStatus('Failed to save token: ' + err.message, 'var(--red)');
+        });
+    },
+    onExit: function() {
+      showSyncStatus('', '');
+    }
+  });
+  tellerInstance.open();
+}
+
+function tellerRefresh() {
+  if (!SHEETS_URL) { showSyncStatus('No Sheets URL configured', 'var(--amber)'); return; }
+  var btn = document.getElementById('teller-refresh-btn');
+  if (btn) { btn.textContent = '\u23f3 Refreshing...'; btn.style.opacity = '0.6'; }
+  var msg = document.getElementById('teller-status-msg');
+  if (msg) msg.textContent = 'Fetching live balances...';
+  showSyncStatus('Refreshing Teller balances...', 'var(--accent)');
+
+  fetch(SHEETS_URL + '?action=teller_get_accounts&t=' + Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      if (!data.ok) throw new Error(data.error || 'Refresh failed');
+      if (data.accounts && data.accounts.length) {
+        // Merge Teller live accounts into plaidAccounts
+        // Keep any manually-added accounts that have no tellerAccountId
+        var manual = plaidAccounts.filter(function(a){ return !a.tellerId; });
+        plaidAccounts = manual.concat(data.accounts);
+        saveAccounts();
+      }
+      var now = new Date();
+      tellerLastSync = (now.getHours() % 12 || 12) + ':' + String(now.getMinutes()).padStart(2,'0') + ' ' + (now.getHours() >= 12 ? 'PM' : 'AM');
+      tellerConfigured = true;
+      showTellerStatus();
+      showSyncStatus('Balances updated from Teller', 'var(--green)');
+      renderAccounts();
+      renderDashboard();
+    })
+    .catch(function(err) {
+      showSyncStatus('Teller refresh failed: ' + err.message, 'var(--red)');
+    })
+    .finally(function() {
+      if (btn) { btn.textContent = '\u21bb Refresh Balances'; btn.style.opacity = '1'; }
+    });
+}
+
+function tellerDisconnect(enrollmentId) {
+  if (!confirm('Disconnect this bank? Live balance sync will stop for this institution.')) return;
+  if (!SHEETS_URL) return;
+  fetch(SHEETS_URL + '?action=teller_remove_token&enrollmentId=' + encodeURIComponent(enrollmentId) + '&t=' + Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      if (!data.ok) throw new Error(data.error || 'Remove failed');
+      tellerEnrollments = tellerEnrollments.filter(function(e){ return e.enrollmentId !== enrollmentId; });
+      if (!tellerEnrollments.length) {
+        tellerConfigured = false;
+        var dot   = document.getElementById('teller-conn-dot');
+        var label = document.getElementById('teller-conn-label');
+        if (dot)   { dot.style.background = 'var(--amber)'; dot.style.boxShadow = '0 0 4px var(--amber)'; dot.style.animation = 'pulse 2s infinite'; }
+        if (label) { label.textContent = 'MOCK'; label.style.background = ''; label.style.color = 'var(--white-faint)'; label.style.border = ''; }
+      }
+      showSyncStatus('Bank disconnected', 'var(--amber)');
+      renderAccounts();
+    })
+    .catch(function(err) {
+      showSyncStatus('Disconnect failed: ' + err.message, 'var(--red)');
+    });
 }
 
 // ── DRAW SEQUENCING ───────────────────────────────────────────────
