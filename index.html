@@ -1368,6 +1368,7 @@ function renderAccounts() {
   var addBtn = '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px">'
     + '<button onclick="tellerConnect()" id="teller-connect-btn" style="background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.35);color:#06B6D4;padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">⚡ Connect Bank</button>'
     + '<button onclick="tellerRefresh()" id="teller-refresh-btn" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">↻ Refresh Balances</button>'
+    + '<button onclick="openTellerPicker()" id="teller-manage-btn" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">⚙ Manage Accounts</button>'
     + '<button onclick="openAcctEdit(null,\'depository\')" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">+ Add Manual</button>'
     + '</div>';
 
@@ -3344,6 +3345,12 @@ function loadFromSheets() {
       if (s.biweeklyPayroll) biweeklyPayroll = Number(s.biweeklyPayroll);
       if (s.rentAmount)     rentAmount     = Number(s.rentAmount);
       if (s.closeRate)       closeRate       = Number(s.closeRate);
+      if (s.tellerAllowedIds) {
+        try {
+          var ids = JSON.parse(s.tellerAllowedIds);
+          if (Array.isArray(ids) && ids.length) tellerAllowedIds = new Set(ids);
+        } catch(e) {}
+      }
       if (s.avgDealSize)     avgDealSize     = Number(s.avgDealSize);
       // Load full imported AR if present, else fall back to defaults + overrides
       var fullAR = data.fullAR || [];
@@ -3474,6 +3481,8 @@ var tellerConfigured      = false;
 var tellerEnrollments     = [];   // [{ enrollmentId, institution }] — safe to use in UI
 var tellerEnrollmentsFull = [];   // [{ enrollmentId, institution, accessToken }] — used for Netlify function calls only
 var tellerLastSync        = '';   // human-readable last sync time
+var tellerAllAccounts     = [];   // all accounts returned by Teller (before filtering)
+var tellerAllowedIds      = null; // Set of tellerId strings to show — null means first-run (show picker)
 var jnSyncing        = false;
 var billSyncing      = false;
 var asanaSyncing     = false;
@@ -3876,8 +3885,18 @@ function tellerRefresh() {
     .then(function(data) {
       if (!data.ok) throw new Error(data.error || 'Refresh failed');
       if (data.accounts && data.accounts.length) {
-        var manual = plaidAccounts.filter(function(a){ return !a.tellerId; });
-        plaidAccounts = manual.concat(data.accounts);
+        // Store full list for the picker
+        tellerAllAccounts = data.accounts;
+
+        // First time connecting (no filter set yet) — open the picker
+        if (tellerAllowedIds === null) {
+          if (btn) { btn.textContent = '\u21bb Refresh Balances'; btn.style.opacity = '1'; }
+          showSyncStatus('Select which accounts to show', 'var(--accent)');
+          openTellerPicker();
+          return;
+        }
+
+        applyTellerFilter();
         if (SHEETS_URL) saveAccounts();
       }
       if (data.errors && data.errors.length) {
@@ -3887,7 +3906,8 @@ function tellerRefresh() {
       tellerLastSync = (now.getHours() % 12 || 12) + ':' + String(now.getMinutes()).padStart(2,'0') + ' ' + (now.getHours() >= 12 ? 'PM' : 'AM');
       tellerConfigured = true;
       showTellerStatus();
-      showSyncStatus('Balances updated — ' + data.count + ' accounts', 'var(--green)');
+      var visibleCount = plaidAccounts.filter(function(a){ return !!a.tellerId; }).length;
+      showSyncStatus('Balances updated — ' + visibleCount + ' accounts', 'var(--green)');
       renderAccounts();
       renderDashboard();
     })
@@ -3920,6 +3940,90 @@ function tellerDisconnect(enrollmentId) {
     .catch(function(err) {
       showSyncStatus('Disconnect failed: ' + err.message, 'var(--red)');
     });
+}
+
+// ── TELLER ACCOUNT PICKER ─────────────────────────────────────────
+
+function applyTellerFilter() {
+  if (!tellerAllAccounts.length) return;
+  var manual = plaidAccounts.filter(function(a){ return !a.tellerId; });
+  var live;
+  if (tellerAllowedIds && tellerAllowedIds.size > 0) {
+    live = tellerAllAccounts.filter(function(a){ return tellerAllowedIds.has(a.tellerId); });
+  } else {
+    live = tellerAllAccounts; // no filter set yet — show all
+  }
+  plaidAccounts = manual.concat(live);
+}
+
+function openTellerPicker() {
+  var list = document.getElementById('teller-picker-list');
+  if (!list) return;
+  var accounts = tellerAllAccounts.length ? tellerAllAccounts : plaidAccounts.filter(function(a){ return !!a.tellerId; });
+  if (!accounts.length) {
+    showSyncStatus('No Teller accounts found — click Refresh first', 'var(--amber)');
+    return;
+  }
+
+  var html = '';
+  accounts.forEach(function(a) {
+    var isAllowed = !tellerAllowedIds || tellerAllowedIds.has(a.tellerId);
+    var typeLabel = a.type === 'credit' ? 'Credit' : (a.sub || 'Depository');
+    typeLabel = typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1).replace('_', ' ');
+    var bal = a.type === 'credit'
+      ? '<span style="color:var(--red)">-$' + (a.bal||0).toLocaleString() + '</span>'
+      : '<span style="color:var(--green)">$' + (a.avail||a.bal||0).toLocaleString() + '</span>';
+    html += '<label style="display:flex;align-items:center;gap:12px;background:var(--navy-3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;cursor:pointer">'
+      + '<input type="checkbox" data-tellerid="' + a.tellerId + '" ' + (isAllowed ? 'checked' : '') + ' style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">'
+      + '<div style="display:flex;align-items:center;gap:8px;flex:1">'
+      + '<div class="inst-logo" style="background:' + (a.color||'#374151') + ';width:28px;height:28px;border-radius:6px;font-size:10px">' + (a.logo||'??') + '</div>'
+      + '<div style="flex:1">'
+      + '<div style="font-size:12px;font-weight:600;color:var(--white)">' + a.name + '</div>'
+      + '<div style="font-size:10px;font-family:\'DM Mono\',monospace;color:var(--white-faint)">' + a.inst + ' \u00b7 ' + typeLabel + ' \u00b7 \u00b7\u00b7\u00b7\u00b7' + (a.mask||'????') + '</div>'
+      + '</div>'
+      + '<div style="font-size:13px;font-weight:600;font-family:\'DM Mono\',monospace">' + bal + '</div>'
+      + '</div>'
+      + '</label>';
+  });
+  list.innerHTML = html;
+  document.getElementById('teller-picker-modal').style.display = 'flex';
+}
+
+function saveTellerPicker() {
+  var checkboxes = document.querySelectorAll('#teller-picker-list input[type="checkbox"]');
+  var allowed = new Set();
+  checkboxes.forEach(function(cb) {
+    if (cb.checked) allowed.add(cb.dataset.tellerid);
+  });
+
+  if (allowed.size === 0) {
+    if (!confirm('No accounts selected — this will hide all Teller accounts. Continue?')) return;
+  }
+
+  tellerAllowedIds = allowed;
+
+  // Persist to Sheets as part of accounts save
+  applyTellerFilter();
+  if (SHEETS_URL) {
+    // Save allowed IDs in settings
+    fetch(SHEETS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'settings', settings: {
+        biweeklyPayroll: biweeklyPayroll,
+        rentAmount: rentAmount,
+        tellerAllowedIds: JSON.stringify(Array.from(allowed))
+      }})
+    }).catch(function(){});
+    saveAccounts();
+  }
+
+  document.getElementById('teller-picker-modal').style.display = 'none';
+  var now = new Date();
+  tellerLastSync = (now.getHours() % 12 || 12) + ':' + String(now.getMinutes()).padStart(2,'0') + ' ' + (now.getHours() >= 12 ? 'PM' : 'AM');
+  showTellerStatus();
+  showSyncStatus('Showing ' + allowed.size + ' accounts', 'var(--green)');
+  renderAccounts();
+  renderDashboard();
 }
 
 // ── DRAW SEQUENCING ───────────────────────────────────────────────
@@ -6208,6 +6312,22 @@ updateScenarioHints();
       <div style="display:flex;gap:8px">
         <button onclick="saveAcctEdit()" style="flex:1;background:linear-gradient(135deg,#3B82F6,#2563EB);border:none;color:white;padding:10px;border-radius:7px;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer">Save Account</button>
         <button onclick="document.getElementById('acct-edit-modal').style.display='none'" style="background:var(--navy-5);border:1px solid var(--border);color:var(--white-dim);padding:10px 16px;border-radius:7px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELLER ACCOUNT PICKER MODAL -->
+  <div class="url-modal" id="teller-picker-modal" style="display:none">
+    <div class="url-modal-card" style="width:540px;max-width:95vw">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-size:15px;font-weight:700">Select Business Accounts</div>
+        <button onclick="document.getElementById('teller-picker-modal').style.display='none'" style="background:none;border:none;color:var(--white-faint);font-size:16px;cursor:pointer">✕</button>
+      </div>
+      <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-bottom:14px">Check only the accounts you want to show in the CCC. Unchecked accounts are ignored.</div>
+      <div id="teller-picker-list" style="max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:16px"></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button onclick="document.getElementById('teller-picker-modal').style.display='none'" style="background:var(--navy-5);border:1px solid var(--border);color:var(--white-dim);padding:10px 16px;border-radius:7px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer">Cancel</button>
+        <button onclick="saveTellerPicker()" style="background:var(--accent);border:none;color:#fff;padding:10px 20px;border-radius:7px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;font-weight:600">Save Selection</button>
       </div>
     </div>
   </div>
