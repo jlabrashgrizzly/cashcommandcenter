@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cash Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.teller.io/connect/connect.js"></script>
 <style>
   :root {
     --navy:#0B1120; --navy-2:#111827; --navy-3:#1a2540; --navy-4:#1e2d4a; --navy-5:#243357;
@@ -3785,12 +3784,18 @@ function showTellerStatus() {
 }
 
 function tellerConnect() {
-  if (!window.TellerConnect) {
-    showSyncStatus('Teller SDK not loaded — check your connection', 'var(--red)');
-    return;
-  }
   if (!SHEETS_URL) {
     showSyncStatus('No Sheets URL configured', 'var(--amber)');
+    return;
+  }
+  if (!window.TellerConnect) {
+    // SDK not ready yet — inject it dynamically then retry
+    showSyncStatus('Loading Teller SDK...', 'var(--accent)');
+    var s = document.createElement('script');
+    s.src = 'https://cdn.teller.io/connect/connect.js';
+    s.onload = function() { setTimeout(tellerConnect, 300); };
+    s.onerror = function() { showSyncStatus('Failed to load Teller SDK — check internet connection', 'var(--red)'); };
+    document.body.appendChild(s);
     return;
   }
   tellerInstance = window.TellerConnect.setup({
@@ -6181,5 +6186,6 @@ updateScenarioHints();
     </div>
   </div>
 
+<script src="https://cdn.teller.io/connect/connect.js"></script>
 </body>
 </html>
