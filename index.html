@@ -1319,14 +1319,7 @@ function renderVendors(){
 }
 
 // ── ACCOUNTS (PLAID MOCK) ────────────────────────────────────────
-var plaidAccounts=[
-  {id:'wf-chk', inst:'Wells Fargo',      logo:'WF',color:'#D71E28',name:'Business Checking',      mask:'4821',type:'depository',sub:'checking',      bal:187500,avail:183200,limit:null},
-  {id:'wf-sav', inst:'Wells Fargo',      logo:'WF',color:'#D71E28',name:'Business Savings (Buffer)',mask:'9342',type:'depository',sub:'savings',       bal:122500,avail:122500,limit:null},
-  {id:'ch-cc',  inst:'Chase',            logo:'CH',color:'#117ACA',name:'Ink Business Preferred',  mask:'4821',type:'credit',    sub:'credit card',    bal:28400, avail:21600, limit:50000},
-  {id:'ax-cc',  inst:'American Express', logo:'AX',color:'#007BC1',name:'Business Gold Card',      mask:'9934',type:'credit',    sub:'credit card',    bal:14600, avail:20400, limit:35000},
-  {id:'c1-cc',  inst:'Capital One',      logo:'C1',color:'#D03027',name:'Spark Cash Select',       mask:'2278',type:'credit',    sub:'credit card',    bal:0,     avail:30000, limit:30000},
-  {id:'wf-loc', inst:'Wells Fargo',      logo:'WF',color:'#D71E28',name:'Business Line of Credit', mask:'7741',type:'credit',    sub:'line of credit', bal:118000,avail:132000,limit:250000},
-];
+var plaidAccounts=[];
 
 // ══════════════════════════════════════════════════════════════════
 // ACCOUNTS EDITOR — editable bank + credit accounts
@@ -1365,11 +1358,14 @@ function renderAccounts() {
     + '<div class="card-sm"><div class="kl">Net Liquid Position</div><div class="kv accent">'+fmt(totalCash)+'</div><div class="ks">Cash only</div></div>'
     + '</div>';
 
+  var btnStyle     = 'padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;';
+  var btnSecondary = btnStyle + 'background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);';
+  var btnTeller    = btnStyle + 'background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.35);color:#06B6D4;';
   var addBtn = '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px;flex-wrap:wrap">'
-    + '<button onclick="tellerConnect()" id="teller-connect-btn" style="background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.35);color:#06B6D4;padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">⚡ Connect Bank</button>'
-    + '<button onclick="tellerRefresh()" id="teller-refresh-btn" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">↻ Refresh</button>'
-    + '<button onclick="openTellerPicker()" id="teller-manage-btn" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">⚙ Manage</button>'
-    + '<button onclick="openAcctEdit(null,\'depository\')" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">+ Manual</button>'
+    + '<button onclick="tellerConnect()" id="teller-connect-btn" style="'+btnTeller+'">⚡ Connect Bank</button>'
+    + '<button onclick="tellerRefresh()" id="teller-refresh-btn" style="'+btnSecondary+'">↻ Refresh</button>'
+    + '<button onclick="openTellerPicker()" id="teller-manage-btn" style="'+btnSecondary+'">⚙ Manage</button>'
+    + '<button onclick="openAcctEdit(null,\'depository\')" style="'+btnSecondary+'">+ Manual</button>'
     + '</div>';
 
   var tellerStatus = tellerEnrollments.length > 0
@@ -3370,7 +3366,10 @@ function loadFromSheets() {
       var ld = data.liabilities || [];
       if (ld.length) { liabilities = ld; }
       var ad = data.accounts || [];
-      if (ad.length) { plaidAccounts = ad; }
+      // Only restore accounts that came from Teller (have tellerId) or were manually added
+      // Skip any old mock accounts that may be saved in Sheets
+      var realAccounts = ad.filter(function(a){ return a.tellerId || (!a.id.startsWith('wf-') && !a.id.startsWith('ch-') && !a.id.startsWith('ax-') && !a.id.startsWith('c1-')); });
+      if (realAccounts.length) { plaidAccounts = realAccounts; }
       var bd = data.buffer;
       if (bd) {
         // Handle double-encoded string (Apps Script bug guard)
