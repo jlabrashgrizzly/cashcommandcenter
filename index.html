@@ -3927,22 +3927,12 @@ function tellerRefresh() {
       if (data.errors && data.errors.length) {
         console.warn('Teller partial errors:', data.errors);
       }
-      // Handle disconnected enrollments — remove dead tokens and prompt reconnect
+      // Show reconnect warning for disconnected enrollments but DON'T auto-remove
+      // User must explicitly disconnect via the X button
       if (data.disconnected && data.disconnected.length) {
         data.disconnected.forEach(function(d) {
-          showSyncStatus('⚠️ ' + d.institution + ' disconnected — click Connect Bank to reconnect', 'var(--amber)');
-          // Remove from local enrollments
-          tellerEnrollments     = tellerEnrollments.filter(function(e){ return e.enrollmentId !== d.enrollmentId; });
-          tellerEnrollmentsFull = tellerEnrollmentsFull.filter(function(e){ return e.enrollmentId !== d.enrollmentId; });
-          // Remove dead token from Apps Script sheet
-          if (SHEETS_URL) {
-            fetch(SHEETS_URL + '?action=teller_remove_token&enrollmentId=' + encodeURIComponent(d.enrollmentId) + '&t=' + Date.now())
-              .catch(function(){});
-          }
+          showSyncStatus('⚠️ ' + d.institution + ' needs reconnection — click Connect Bank', 'var(--amber)');
         });
-        // Update sidebar
-        showTellerStatus();
-        renderAccounts();
       }
       var now = new Date();
       tellerLastSync = (now.getHours() % 12 || 12) + ':' + String(now.getMinutes()).padStart(2,'0') + ' ' + (now.getHours() >= 12 ? 'PM' : 'AM');
