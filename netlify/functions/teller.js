@@ -116,25 +116,29 @@ exports.handler = async function(event) {
         'Capital One':      'C1'
       };
 
-      const allAccounts = [];
-      const errors      = [];
+      // Fetch all enrollments in parallel — faster and prevents one slow bank blocking others
+      const results = await Promise.all(enrollments.map(async (enrollment) => {
+        const instName  = enrollment.institution || 'Unknown';
+        const shortInst = instName.replace('American Express', 'Amex');
+        const accounts  = [];
+        let   error     = null;
+        let   disconnected = false;
 
-      for (const enrollment of enrollments) {
         try {
-          // Fetch account list
           const acctResp = await tellerRequest('/accounts', enrollment.accessToken);
           if (acctResp.status !== 200) {
-            throw new Error(`Teller /accounts returned ${acctResp.status}: ${acctResp.body.substring(0, 200)}`);
+            const body = JSON.parse(acctResp.body);
+            const code = body?.error?.code || '';
+            disconnected = code.startsWith('enrollment.disconnected');
+            throw new Error(`${instName}: Teller /accounts returned ${acctResp.status}: ${acctResp.body.substring(0, 200)}`);
           }
 
-          const accounts = JSON.parse(acctResp.body);
-          const instName = enrollment.institution || 'Unknown';
-          const shortInst = instName.replace('American Express', 'Amex');
+          const acctList = JSON.parse(acctResp.body);
 
-          for (const acct of accounts) {
-            if (acct.status !== 'open') continue;
+          // Fetch all balances in parallel within this enrollment
+          await Promise.all(acctList.map(async (acct) => {
+            if (acct.status !== 'open') return;
 
-            // Fetch balance — use 5s timeout, show account with $0 if it fails
             let bal = 0, avail = 0;
             try {
               const balResp = await tellerRequest(`/accounts/${acct.id}/balances`, enrollment.accessToken, 15000);
@@ -143,16 +147,13 @@ exports.handler = async function(event) {
                 bal   = parseFloat(balData.ledger    || 0);
                 avail = parseFloat(balData.available || bal);
               }
-            } catch(balErr) {
-              // Balance fetch failed — show account with $0, don't skip it
-            }
+            } catch(balErr) { /* show $0 if balance fetch fails */ }
 
-            const isCredit  = acct.type === 'credit';
+            const isCredit    = acct.type === 'credit';
             const mappedBal   = Math.abs(bal);
             const mappedAvail = Math.abs(avail);
-            const limit       = isCredit ? Math.round(mappedBal + mappedAvail) : null;
 
-            allAccounts.push({
+            accounts.push({
               id:       'teller-' + acct.id,
               tellerId: acct.id,
               inst:     shortInst,
@@ -164,37 +165,32 @@ exports.handler = async function(event) {
               sub:      acct.subtype,
               bal:      Math.round(mappedBal   * 100) / 100,
               avail:    Math.round(mappedAvail * 100) / 100,
-              limit:    limit,
+              limit:    isCredit ? Math.round(mappedBal + mappedAvail) : null,
               _enrollmentId: enrollment.enrollmentId
             });
-          }
-        } catch(err) {
-          const isDisconnected = err.message.includes('enrollment.disconnected')
-            && !err.message.includes('timeout')
-            && !err.message.includes('408');
-          errors.push({
-            institution:  enrollment.institution,
-            enrollmentId: enrollment.enrollmentId,
-            message:      err.message,
-            disconnected: isDisconnected
-          });
-        }
-      }
+          }));
 
-      // Separate disconnected enrollments so frontend can show reconnect prompt
-      const disconnected = errors.filter(e => e.disconnected);
-      const otherErrors  = errors.filter(e => !e.disconnected).map(e => `${e.institution}: ${e.message}`);
+        } catch(err) {
+          error = { institution: instName, enrollmentId: enrollment.enrollmentId, message: err.message, disconnected };
+        }
+
+        return { accounts, error };
+      }));
+
+      const allAccounts = results.flatMap(r => r.accounts);
+      const disconnected = results.filter(r => r.error && r.error.disconnected).map(r => r.error);
+      const otherErrors  = results.filter(r => r.error && !r.error.disconnected).map(r => `${r.error.institution}: ${r.error.message}`);
 
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          ok:            true,
-          accounts:      allAccounts,
-          count:         allAccounts.length,
-          errors:        otherErrors,
-          disconnected:  disconnected,
-          syncedAt:      new Date().toISOString()
+          ok:           true,
+          accounts:     allAccounts,
+          count:        allAccounts.length,
+          errors:       otherErrors,
+          disconnected: disconnected,
+          syncedAt:     new Date().toISOString()
         })
       };
     }
