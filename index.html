@@ -1365,11 +1365,11 @@ function renderAccounts() {
     + '<div class="card-sm"><div class="kl">Net Liquid Position</div><div class="kv accent">'+fmt(totalCash)+'</div><div class="ks">Cash only</div></div>'
     + '</div>';
 
-  var addBtn = '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px">'
+  var addBtn = '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px;flex-wrap:wrap">'
     + '<button onclick="tellerConnect()" id="teller-connect-btn" style="background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.35);color:#06B6D4;padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">⚡ Connect Bank</button>'
-    + '<button onclick="tellerRefresh()" id="teller-refresh-btn" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">↻ Refresh Balances</button>'
-    + '<button onclick="openTellerPicker()" id="teller-manage-btn" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">⚙ Manage Accounts</button>'
-    + '<button onclick="openAcctEdit(null,\'depository\')" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">+ Add Manual</button>'
+    + '<button onclick="tellerRefresh()" id="teller-refresh-btn" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">↻ Refresh</button>'
+    + '<button onclick="openTellerPicker()" id="teller-manage-btn" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">⚙ Manage</button>'
+    + '<button onclick="openAcctEdit(null,\'depository\')" style="background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:6px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer;">+ Manual</button>'
     + '</div>';
 
   var tellerStatus = tellerEnrollments.length > 0
