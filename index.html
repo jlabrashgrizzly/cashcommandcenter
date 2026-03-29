@@ -1334,9 +1334,16 @@ function acctNextId() {
 
 function saveAccounts() {
   if (!SHEETS_URL) return;
+  // Deduplicate before saving — last occurrence wins for each id
+  var seen = {};
+  var deduped = [];
+  for (var i = plaidAccounts.length - 1; i >= 0; i--) {
+    var key = plaidAccounts[i].tellerId || plaidAccounts[i].id;
+    if (!seen[key]) { seen[key] = true; deduped.unshift(plaidAccounts[i]); }
+  }
   fetch(SHEETS_URL, {
     method: 'POST',
-    body: JSON.stringify({ type: 'accounts', accounts: plaidAccounts })
+    body: JSON.stringify({ type: 'accounts', accounts: deduped })
   }).then(function(){ showSyncStatus('Saved', 'var(--green)'); })
     .catch(function(){ showSyncStatus('Save failed', 'var(--amber)'); });
 }
@@ -3898,6 +3905,10 @@ function tellerRefresh() {
           return;
         }
 
+        // Wipe previous Teller accounts before applying fresh ones — prevents stacking
+        plaidAccounts = plaidAccounts.filter(function(a){
+          return !a.tellerId && !(a.id && a.id.indexOf('teller-') === 0);
+        });
         applyTellerFilter();
         if (SHEETS_URL) saveAccounts();
       }
@@ -3947,15 +3958,24 @@ function tellerDisconnect(enrollmentId) {
 // ── TELLER ACCOUNT PICKER ─────────────────────────────────────────
 
 function applyTellerFilter() {
-  var source = tellerAllAccounts.length ? tellerAllAccounts : plaidAccounts;
-  if (!source.length) return;
-  var manual = plaidAccounts.filter(function(a){ return !a.tellerId; });
+  // Always use tellerAllAccounts as the single source of truth for live accounts.
+  // Only fall back to plaidAccounts if we truly have nothing from Teller yet.
+  var source = tellerAllAccounts.length ? tellerAllAccounts : [];
+  // Keep only accounts that were manually added (no tellerId and no teller- prefix)
+  var manual = plaidAccounts.filter(function(a){
+    return !a.tellerId && !(a.id && a.id.indexOf('teller-') === 0);
+  });
   var live;
-  if (tellerAllowedIds && tellerAllowedIds.size > 0) {
-    live = source.filter(function(a){ return tellerAllowedIds.has(a.tellerId || a.id); });
+  if (source.length) {
+    if (tellerAllowedIds && tellerAllowedIds.size > 0) {
+      live = source.filter(function(a){ return tellerAllowedIds.has(a.tellerId || a.id); });
+    } else {
+      live = source;
+    }
   } else {
-    live = source;
+    live = [];
   }
+  // Replace plaidAccounts with clean merge — no duplicates possible
   plaidAccounts = manual.concat(live);
 }
 
@@ -4005,6 +4025,11 @@ function saveTellerPicker() {
   }
 
   tellerAllowedIds = allowed;
+
+  // Clear plaidAccounts Teller entries before reapplying filter — prevents stacking
+  plaidAccounts = plaidAccounts.filter(function(a){
+    return !a.tellerId && !(a.id && a.id.indexOf('teller-') === 0);
+  });
 
   // Persist to Sheets as part of accounts save
   applyTellerFilter();
