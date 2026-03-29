@@ -153,19 +153,30 @@ exports.handler = async function(event) {
             });
           }
         } catch(err) {
-          errors.push(`${enrollment.institution}: ${err.message}`);
+          const isDisconnected = err.message.includes('enrollment.disconnected') || err.message.includes('404');
+          errors.push({
+            institution:  enrollment.institution,
+            enrollmentId: enrollment.enrollmentId,
+            message:      err.message,
+            disconnected: isDisconnected
+          });
         }
       }
+
+      // Separate disconnected enrollments so frontend can show reconnect prompt
+      const disconnected = errors.filter(e => e.disconnected);
+      const otherErrors  = errors.filter(e => !e.disconnected).map(e => `${e.institution}: ${e.message}`);
 
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          ok:       true,
-          accounts: allAccounts,
-          count:    allAccounts.length,
-          errors:   errors,
-          syncedAt: new Date().toISOString()
+          ok:            true,
+          accounts:      allAccounts,
+          count:         allAccounts.length,
+          errors:        otherErrors,
+          disconnected:  disconnected,
+          syncedAt:      new Date().toISOString()
         })
       };
     }
