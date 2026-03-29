@@ -28,7 +28,7 @@ function getCerts() {
   return { cert, key };
 }
 
-function tellerRequest(path, accessToken, timeoutMs = 8000) {
+function tellerRequest(path, accessToken, timeoutMs = 20000) {
   return new Promise((resolve, reject) => {
     const { cert, key } = getCerts();
     const auth = 'Basic ' + Buffer.from(accessToken + ':').toString('base64');
@@ -137,7 +137,7 @@ exports.handler = async function(event) {
             // Fetch balance — use 5s timeout, show account with $0 if it fails
             let bal = 0, avail = 0;
             try {
-              const balResp = await tellerRequest(`/accounts/${acct.id}/balances`, enrollment.accessToken, 5000);
+              const balResp = await tellerRequest(`/accounts/${acct.id}/balances`, enrollment.accessToken, 15000);
               if (balResp.status === 200) {
                 const balData = JSON.parse(balResp.body);
                 bal   = parseFloat(balData.ledger    || 0);
@@ -169,7 +169,9 @@ exports.handler = async function(event) {
             });
           }
         } catch(err) {
-          const isDisconnected = err.message.includes('enrollment.disconnected') || err.message.includes('404');
+          const isDisconnected = err.message.includes('enrollment.disconnected')
+            && !err.message.includes('timeout')
+            && !err.message.includes('408');
           errors.push({
             institution:  enrollment.institution,
             enrollmentId: enrollment.enrollmentId,
