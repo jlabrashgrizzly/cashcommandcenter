@@ -28,7 +28,7 @@ function getCerts() {
   return { cert, key };
 }
 
-function tellerRequest(path, accessToken) {
+function tellerRequest(path, accessToken, timeoutMs = 8000) {
   return new Promise((resolve, reject) => {
     const { cert, key } = getCerts();
     const auth = 'Basic ' + Buffer.from(accessToken + ':').toString('base64');
@@ -40,7 +40,8 @@ function tellerRequest(path, accessToken) {
       method:   'GET',
       cert:     cert,
       key:      key,
-      headers:  { 'Authorization': auth }
+      headers:  { 'Authorization': auth },
+      timeout:  timeoutMs
     };
 
     const req = https.request(options, (res) => {
@@ -51,7 +52,18 @@ function tellerRequest(path, accessToken) {
       });
     });
 
-    req.on('error', reject);
+    req.on('timeout', () => {
+      req.destroy();
+      resolve({ status: 408, body: '{"error":{"message":"Request timed out","code":"timeout"}}' });
+    });
+
+    req.on('error', (err) => {
+      if (err.code === 'ECONNRESET' || err.message.includes('socket hang up')) {
+        resolve({ status: 408, body: '{"error":{"message":"Connection reset","code":"timeout"}}' });
+      } else {
+        reject(err);
+      }
+    });
     req.end();
   });
 }
@@ -122,13 +134,17 @@ exports.handler = async function(event) {
           for (const acct of accounts) {
             if (acct.status !== 'open') continue;
 
-            // Fetch balance
+            // Fetch balance — use 5s timeout, show account with $0 if it fails
             let bal = 0, avail = 0;
-            const balResp = await tellerRequest(`/accounts/${acct.id}/balances`, enrollment.accessToken);
-            if (balResp.status === 200) {
-              const balData = JSON.parse(balResp.body);
-              bal   = parseFloat(balData.ledger    || 0);
-              avail = parseFloat(balData.available || bal);
+            try {
+              const balResp = await tellerRequest(`/accounts/${acct.id}/balances`, enrollment.accessToken, 5000);
+              if (balResp.status === 200) {
+                const balData = JSON.parse(balResp.body);
+                bal   = parseFloat(balData.ledger    || 0);
+                avail = parseFloat(balData.available || bal);
+              }
+            } catch(balErr) {
+              // Balance fetch failed — show account with $0, don't skip it
             }
 
             const isCredit  = acct.type === 'credit';
