@@ -13,21 +13,19 @@
 //   remove_token  — remove an enrollment token (proxies to Apps Script)
 
 const https = require('https');
+const fs    = require('fs');
+const path  = require('path');
 
 const TELLER_BASE = 'api.teller.io';
 
 // ── Helpers ───────────────────────────────────────────────────────
 
 function getCerts() {
-  const certB64 = process.env.TELLER_CERT;
-  const keyB64  = process.env.TELLER_KEY;
-  if (!certB64 || !keyB64) {
-    throw new Error('TELLER_CERT or TELLER_KEY environment variable not set in Netlify');
-  }
-  return {
-    cert: Buffer.from(certB64, 'base64').toString('utf8'),
-    key:  Buffer.from(keyB64,  'base64').toString('utf8'),
-  };
+  // Cert files are bundled alongside this function in netlify/functions/
+  const dir  = path.join(__dirname);
+  const cert = fs.readFileSync(path.join(dir, 'certificate.pem'), 'utf8');
+  const key  = fs.readFileSync(path.join(dir, 'private_key.pem'),  'utf8');
+  return { cert, key };
 }
 
 function tellerRequest(path, accessToken) {
