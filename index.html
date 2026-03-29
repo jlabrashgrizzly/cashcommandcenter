@@ -3844,10 +3844,16 @@ function tellerConnect() {
         .then(function(r){ return r.json(); })
         .then(function(data) {
           if (!data.ok) throw new Error(data.error || 'Store failed');
-          // Add to local enrollments (use vars already extracted above)
+          // Add to both enrollment lists
           tellerEnrollments.push({
             enrollmentId: enrollmentId,
             institution:  instName
+          });
+          // Add to full list WITH token so tellerRefresh can use it immediately
+          tellerEnrollmentsFull.push({
+            enrollmentId: enrollmentId,
+            institution:  instName,
+            accessToken:  accessToken
           });
           tellerConfigured = true;
           showTellerStatus();
