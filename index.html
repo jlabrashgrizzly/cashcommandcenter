@@ -1363,8 +1363,7 @@ function renderAccounts() {
   var btnTeller    = btnStyle + 'background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.35);color:#06B6D4;';
   var addBtn = '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px;flex-wrap:wrap">'
     + '<button onclick="tellerConnect()" id="teller-connect-btn" style="'+btnTeller+'">⚡ Connect Bank</button>'
-    + '<button onclick="tellerRefresh()" id="teller-refresh-btn" style="'+btnSecondary+'">↻ Refresh</button>'
-    + '<button onclick="openTellerPicker()" id="teller-manage-btn" style="'+btnSecondary+'">⚙ Manage</button>'
+    + '<button onclick="tellerRefresh()" id="teller-refresh-btn" style="'+btnSecondary+'">↻ Refresh Balances</button>'
     + '<button onclick="openAcctEdit(null,\'depository\')" style="'+btnSecondary+'">+ Manual</button>'
     + '</div>';
 
@@ -1389,7 +1388,10 @@ function renderAccounts() {
     + '<div class="plaid-logo"><svg width="18" height="18" fill="none" stroke="#06B6D4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg></div>'
     + '<div style="flex:1"><div style="font-size:12px;font-weight:600">Teller — Live Bank Sync</div>'
     + '<div style="font-size:10px;font-family:\'DM Mono\',monospace;color:' + tellerColor + ';margin-top:2px" id="teller-status-msg">' + tellerStatus + '</div></div>'
+    + '<div style="display:flex;align-items:center;gap:8px">'
     + '<span style="font-size:9px;font-family:\'DM Mono\',monospace;background:rgba(6,182,212,0.15);color:#06B6D4;border:1px solid rgba(6,182,212,0.3);padding:3px 8px;border-radius:20px;white-space:nowrap">' + plaidAccounts.length + ' accounts</span>'
+    + '<button onclick="openTellerPicker()" id="teller-manage-btn" style="background:var(--navy-4);border:1px solid rgba(6,182,212,0.3);color:#06B6D4;padding:3px 10px;border-radius:20px;font-size:9px;font-family:\'DM Mono\',monospace;cursor:pointer;white-space:nowrap">⚙ Manage</button>'
+    + '</div>'
     + '</div>'
     + enrollmentTags;
 
@@ -3887,8 +3889,9 @@ function tellerRefresh() {
         // Store full list for the picker
         tellerAllAccounts = data.accounts;
 
-        // First time connecting (no filter set yet) — open the picker
-        if (tellerAllowedIds === null) {
+        // If no filter saved yet, OR if Teller returned more accounts than currently shown — open picker
+        var currentTellerCount = plaidAccounts.filter(function(a){ return !!a.tellerId; }).length;
+        if (tellerAllowedIds === null || (data.accounts.length > currentTellerCount && currentTellerCount === 0)) {
           if (btn) { btn.textContent = '\u21bb Refresh Balances'; btn.style.opacity = '1'; }
           showSyncStatus('Select which accounts to show', 'var(--accent)');
           openTellerPicker();
