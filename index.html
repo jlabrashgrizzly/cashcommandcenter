@@ -211,6 +211,7 @@
   .oh-add-btn{display:flex;align-items:center;gap:5px;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white-dim);font-size:11px;font-family:'DM Mono',monospace;padding:5px 10px;border-radius:5px;cursor:pointer;transition:all 0.15s;}
   .oh-add-btn:hover{background:var(--navy-4);color:var(--white);border-color:var(--accent);}
   .oh-row{display:grid;grid-template-columns:20px 1fr 140px 36px;gap:8px;align-items:center;margin-bottom:6px;}
+  .oh-row.overhead{grid-template-columns:20px 1fr 140px 60px 36px;}
   .oh-row.labor{grid-template-columns:20px 1fr 120px 100px 36px;}
   .oh-input{background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:7px 10px;border-radius:5px;font-size:13px;font-family:'DM Mono',monospace;width:100%;outline:none;transition:border-color 0.15s;}
   .oh-input:focus{border-color:var(--accent);}
@@ -744,6 +745,13 @@
               <div class="oh-section-hdr">
                 <div class="oh-section-title" style="color:var(--amber)">▸ Overhead Costs</div>
                 <button class="oh-add-btn" onclick="ohAddRow('overhead')">+ Add Item</button>
+              </div>
+              <div style="display:grid;grid-template-columns:20px 1fr 140px 60px 36px;gap:8px;margin-bottom:6px;">
+                <div></div>
+                <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);">Description</div>
+                <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);">Monthly ($)</div>
+                <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);">Due Day</div>
+                <div></div>
               </div>
               <div id="oh-overhead-rows"></div>
               <div class="oh-subtotal">
@@ -1685,7 +1693,7 @@ function ohRenderSection(section) {
       var dueDayInput = (section === 'overhead')
         ? '<input class="oh-input" type="number" placeholder="Day" min="1" max="31" style="width:60px" value="' + (row.dueDay||'') + '" title="Due day of month (1-31)" oninput="ohUpdateField(\x27' + section + '\x27,' + i + ',\x27dueDay\x27,this.value)"/>'
         : '';
-      html += '<div class="oh-row" draggable="true" data-section="' + section + '" data-idx="' + i + '" style="margin-bottom:6px">'
+      html += '<div class="oh-row' + (section === 'overhead' ? ' overhead' : '') + '" draggable="true" data-section="' + section + '" data-idx="' + i + '" style="margin-bottom:6px">'
         + '<div class="oh-drag-handle" title="Drag to reorder">' + OH_HANDLE_SVG + '</div>'
         + '<input class="oh-input name" placeholder="Description" value="' + (row.name||'').replace(/"/g,'&quot;') + '" oninput="ohUpdateField(\x27' + section + '\x27,' + i + ',\x27name\x27,this.value)"/>'
         + '<input class="oh-input" type="number" placeholder="0" value="' + (row.amount||'') + '" oninput="ohUpdateField(\x27' + section + '\x27,' + i + ',\x27amount\x27,this.value)"/>'
@@ -4588,17 +4596,92 @@ var EXT_WK_NONPAY    = [72400, 61800, 79200, 68500, 74100, 63200, 81400];
 var EXT_WK_PAY       = [0, 1, 0, 1, 0, 1, 0];
 var EXT_INFLOW       = [134000, 98000, 142000, 121000, 156000, 108000, 138000];
 
+// ── MATERIALS OUTFLOW ESTIMATE ────────────────────────────────────
+// For each Asana project, applies dept materials % to remaining draws
+// and buckets estimated material spend into the 13-week window.
+// Deducts any Bill.com bills whose vendor/description matches material
+// keywords to avoid double-counting already-captured payables.
+function computeMaterialsOutflow() {
+  var wkStarts = [], wkEnds = [];
+  var start = new Date(TODAY); start.setDate(start.getDate() - start.getDay());
+  for (var i = 0; i < 13; i++) {
+    var ws = new Date(start); ws.setDate(ws.getDate() + i * 7);
+    var we = new Date(ws);    we.setDate(we.getDate() + 6);
+    wkStarts.push(ws); wkEnds.push(we);
+  }
+
+  var matWks = [0,0,0,0,0,0,0,0,0,0,0,0,0];
+  var projects = asanaProjects.length ? asanaProjects : backlogProjects;
+
+  projects.forEach(function(p) {
+    var dept     = p.dept || 'ornamental';
+    var pct      = dept === 'structural' ? strMaterialsPct / 100 : ornMaterialsPct / 100;
+    var invoiced = p.invoiced || 0;
+    var allDraws = [];
+
+    if (dept === 'ornamental') {
+      var dueDate = p.dueDate ? new Date(p.dueDate) : null;
+      if (!dueDate) return;
+      if (p.fabricationDraw>0){ var d1=new Date(dueDate); d1.setDate(d1.getDate()-60); allDraws.push({amt:p.fabricationDraw,date:d1}); }
+      if (p.installDraw>0)    { var d2=new Date(dueDate); d2.setDate(d2.getDate()-30); allDraws.push({amt:p.installDraw,date:d2}); }
+      if (p.finalPayment>0)   { var d3=new Date(dueDate); d3.setDate(d3.getDate()+30); allDraws.push({amt:p.finalPayment,date:d3}); }
+      var drawsSum = (p.fabricationDraw||0) + (p.installDraw||0) + (p.finalPayment||0);
+      var gap = p.contractValue - drawsSum;
+      if (gap > 1) { var dgap=new Date(dueDate); dgap.setDate(dgap.getDate()+30); allDraws.push({amt:gap,date:dgap}); }
+      if (!allDraws.length && p.contractValue>0){ var d4=new Date(dueDate); d4.setDate(d4.getDate()+30); allDraws.push({amt:p.contractValue,date:d4}); }
+    } else {
+      var slabDate = p.slabPourDate ? new Date(p.slabPourDate) : null;
+      var dueStr   = p.dueDate      ? new Date(p.dueDate)      : null;
+      if (!slabDate && !dueStr) return;
+      if (slabDate) {
+        if (p.fabricationDeposit>0){ var s1=new Date(slabDate); s1.setDate(s1.getDate()-21); allDraws.push({amt:p.fabricationDeposit,date:s1}); }
+        if (p.erectionDeposit>0)   { var s2=new Date(slabDate); s2.setDate(s2.getDate()+7);  allDraws.push({amt:p.erectionDeposit,date:s2}); }
+        if (p.fabricationBalance>0){ var s3=new Date(slabDate); s3.setDate(s3.getDate()+30); allDraws.push({amt:p.fabricationBalance,date:s3}); }
+      }
+      if (p.erectionBalance>0 && dueStr){ var s4=new Date(dueStr); s4.setDate(s4.getDate()+30); allDraws.push({amt:p.erectionBalance,date:s4}); }
+    }
+
+    getRemainingDraws(allDraws, invoiced).forEach(function(pmt) {
+      if (pmt.date < TODAY) return;
+      for (var w = 0; w < 13; w++) {
+        if (pmt.date >= wkStarts[w] && pmt.date <= wkEnds[w]) {
+          matWks[w] += Math.round(pmt.amt * pct);
+          break;
+        }
+      }
+    });
+  });
+
+  // Deduct Bill.com bills already captured that look like materials/supplies
+  var matKeywords = /material|steel|metal|supply|supplies/i;
+  bills.filter(function(b) { return b.status === 'active'; }).forEach(function(b) {
+    var vendorName = b.vendor || b.name || '';
+    if (!matKeywords.test(vendorName)) return;
+    var dueD = b.due ? new Date(b.due) : null;
+    if (!dueD) return;
+    for (var w = 0; w < 13; w++) {
+      if (dueD >= wkStarts[w] && dueD <= wkEnds[w]) {
+        matWks[w] = Math.max(0, matWks[w] - (b.amt || 0));
+        break;
+      }
+    }
+  });
+
+  return matWks;
+}
+
 function render13Week() {
   var el = document.getElementById('forecast13-content');
   if (!el) return;
 
   // Build full 13-week arrays
-  var allLbls    = WK_LBLS.concat(EXT_WEEK_LBLS);
-  var allOutflow = WK_LBLS.map(function(_,i){ return wkTotal(i); })
-                          .concat(EXT_WK_NONPAY.map(function(np,i){ return np + (EXT_WK_PAY[i] ? biweeklyPayroll : 0); }));
-  var allInflow  = BASE_INFLOW.concat(EXT_INFLOW);
-  var allNet     = allInflow.map(function(v,i){ return v - allOutflow[i]; });
-  var allPay     = WK_PAY.concat(EXT_WK_PAY);
+  var allLbls     = WK_LBLS.concat(EXT_WEEK_LBLS);
+  var allMaterials = computeMaterialsOutflow(); // [13 weeks]
+  var allOutflow  = WK_LBLS.map(function(_,i){ return wkTotal(i) + allMaterials[i]; })
+                           .concat(EXT_WK_NONPAY.map(function(np,i){ return np + (EXT_WK_PAY[i] ? biweeklyPayroll : 0) + allMaterials[i+6]; }));
+  var allInflow   = BASE_INFLOW.concat(EXT_INFLOW);
+  var allNet      = allInflow.map(function(v,i){ return v - allOutflow[i]; });
+  var allPay      = WK_PAY.concat(EXT_WK_PAY);
 
   var startCash  = getLiveCash() || 187500; // live from accounts, fallback to default
   var cashLine   = [];
@@ -4693,10 +4776,12 @@ function render13Week() {
     var isPay = allPay[i];
     var netCol  = net >= 0 ? 'g' : 'r';
     var cashCol = cash >= 150000 ? 'g' : cash >= 100000 ? 'a' : 'r';
+    var mat = allMaterials[i] || 0;
     return '<tr style="'+(isExt?'opacity:0.75':'')+'">'
       +'<td class="b">'+(isExt?'<span style="font-size:9px;color:var(--white-faint)">EST </span>':'')+lbl+(isPay?' ✦':'')+'</td>'
       +'<td class="m">'+fmt(inp)+'</td>'
       +'<td class="m">'+fmt(out)+'</td>'
+      +'<td style="color:var(--cyan);font-family:\'DM Mono\',monospace;font-size:12px">'+(mat>0?fmt(mat):'—')+'</td>'
       +'<td class="'+netCol+'">'+(net>=0?'+':'')+fmt(net)+'</td>'
       +'<td class="'+cashCol+'">'+fmt(Math.round(cash))+'</td>'
       +'<td><span class="pill '+(net<-20000?'r':net<0?'a':'g')+'">'+(net<-20000?'GAP':net<0?'TIGHT':'OK')+'</span></td>'
@@ -4704,7 +4789,7 @@ function render13Week() {
   }).join('');
 
   var table = '<div class="card"><div class="sec">13-Week Detail &nbsp;<span style="font-size:9px;font-family:\'DM Mono\',monospace;color:var(--white-faint)">✦ = payroll week &nbsp;|&nbsp; EST = estimated beyond confirmed data</span></div>'
-    +'<table><thead><tr><th>Week</th><th>Inflow</th><th>Outflow</th><th>Net</th><th>Cash Position</th><th>Status</th></tr></thead>'
+    +'<table><thead><tr><th>Week</th><th>Inflow</th><th>Outflow</th><th style="color:var(--cyan)">Materials Est.</th><th>Net</th><th>Cash Position</th><th>Status</th></tr></thead>'
     +'<tbody>'+rows+'</tbody></table></div>';
 
   // ── SANKEY DIAGRAM ─────────────────────────────────────────────
@@ -4821,7 +4906,33 @@ function render13Week() {
     + buildSankey(sources, destinations, sankeyTotal)
     +'</div>';
 
-  el.innerHTML = alertHtml + kpis + sankeyHtml + cashChart + table;
+
+  // Materials % settings card
+  var settingsCard = '<div class="card mb16">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+      +'<div class="sec" style="margin-bottom:0">Materials % Settings</div>'
+      +'<div style="font-size:10px;font-family:\'DM Mono\',monospace;color:var(--white-faint)">Applied to remaining project draws → estimated material outflow</div>'
+    +'</div>'
+    +'<div style="display:flex;gap:20px;align-items:flex-end">'
+      +'<div>'
+        +'<div style="font-size:10px;font-family:\'DM Mono\',monospace;color:var(--white-faint);margin-bottom:5px">Ornamental Materials %</div>'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+          +'<input type="number" id="mat-orn-pct" min="0" max="100" value="'+ornMaterialsPct+'" style="background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:6px 10px;border-radius:5px;font-size:13px;font-family:\'DM Mono\',monospace;width:80px;outline:none;" oninput="ornMaterialsPct=Number(this.value)"/>'
+          +'<span style="color:var(--white-faint);font-size:12px">%</span>'
+        +'</div>'
+      +'</div>'
+      +'<div>'
+        +'<div style="font-size:10px;font-family:\'DM Mono\',monospace;color:var(--white-faint);margin-bottom:5px">Structural Materials %</div>'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+          +'<input type="number" id="mat-str-pct" min="0" max="100" value="'+strMaterialsPct+'" style="background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:6px 10px;border-radius:5px;font-size:13px;font-family:\'DM Mono\',monospace;width:80px;outline:none;" oninput="strMaterialsPct=Number(this.value)"/>'
+          +'<span style="color:var(--white-faint);font-size:12px">%</span>'
+        +'</div>'
+      +'</div>'
+      +'<button onclick="saveSettings();render13Week()" style="background:var(--accent);color:white;border:none;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:\'Syne\',sans-serif;">Save &amp; Refresh</button>'
+    +'</div>'
+  +'</div>';
+
+  el.innerHTML = settingsCard + alertHtml + kpis + sankeyHtml + cashChart + table;
 }
 
 // ══════════════════════════════════════════════════════════════════
