@@ -107,19 +107,21 @@ exports.handler = async function(event) {
         'Wells Fargo':      '#D71E28',
         'Chase':            '#117ACA',
         'American Express': '#007BC1',
-        'Capital One':      '#D03027'
+        'Capital One':      '#D03027',
+        'CapitalOne':       '#D03027'   // Teller returns name without space
       };
       const INST_LOGOS = {
         'Wells Fargo':      'WF',
         'Chase':            'CH',
         'American Express': 'AX',
-        'Capital One':      'C1'
+        'Capital One':      'C1',
+        'CapitalOne':       'C1'        // Teller returns name without space
       };
 
       // Fetch all enrollments in parallel — faster and prevents one slow bank blocking others
       const results = await Promise.all(enrollments.map(async (enrollment) => {
         const instName  = enrollment.institution || 'Unknown';
-        const shortInst = instName.replace('American Express', 'Amex');
+        const shortInst = instName.replace('American Express', 'Amex').replace('CapitalOne', 'Capital One');
         const accounts  = [];
         let   error     = null;
         let   disconnected = false;
