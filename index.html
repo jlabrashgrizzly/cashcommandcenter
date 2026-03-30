@@ -405,14 +405,14 @@
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
       Vendor Terms
     </div>
-    <div class="nav-item" onclick="navigate('accounts',this)">
-      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
-      Account Balances
-    </div>
   </div>
 
   <div class="sidebar-section">
     <div class="sidebar-label">Finance</div>
+    <div class="nav-item" onclick="navigate('accounts',this)">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
+      Account Balances
+    </div>
     <div class="nav-item" onclick="navigate('buffer',this)">
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
       Buffer Builder
@@ -4813,7 +4813,7 @@ function render13Week() {
   var monthlyOH    = getMonthlyOverheadTotal();
   var totalOH13     = Math.round(monthlyOH / 4.33 * 13);
   var apTotal      = bills.filter(function(b){return b.status==='active';}).reduce(function(s,b){return s+b.amt;},0);
-  var debtTotal    = Math.max(0, totalOutflow13 - totalPayroll - totalRent - apTotal);
+  var debtTotal    = Math.max(0, totalOutflow13 - totalPayroll - totalOH13 - apTotal);
 
   function buildSankey(sources, destinations, total) {
     var SH = 260, SW = 560, COL_W = 14, MID_X = SW/2, GAP = 4;
@@ -4892,7 +4892,7 @@ function render13Week() {
   var destinations = [
     {label:'AP Vendors',    val: Math.max(100, apTotal)},
     {label:'Payroll',       val: Math.max(100, totalPayroll)},
-    {label:'Rent & OH',     val: Math.max(100, totalRent)},
+    {label:'Rent & OH',     val: Math.max(100, totalOH13)},
     {label:'Debt Service',  val: Math.max(100, debtTotal)},
     {label:'Net / Buffer',  val: Math.max(100, Math.abs(totalInflow13 - totalOutflow13))},
   ];
