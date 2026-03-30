@@ -1380,13 +1380,22 @@ function renderAccounts() {
   var tellerColor = tellerEnrollments.length > 0 ? 'var(--green)' : 'var(--white-faint)';
 
   var enrollmentTags = '';
-  if (tellerEnrollments.length > 0) {
+  if (tellerEnrollments.length > 0 || tellerDisconnected.length > 0) {
     enrollmentTags = '<div style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px">';
+    // Connected enrollments
     for (var ei = 0; ei < tellerEnrollments.length; ei++) {
       var enr = tellerEnrollments[ei];
       enrollmentTags += '<div style="display:flex;align-items:center;gap:6px;background:var(--navy-3);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:10px;font-family:\'DM Mono\',monospace;color:var(--white-dim)">'
         + '<span style="color:var(--green)">●</span> ' + enr.institution
         + ' <span onclick="tellerDisconnect(\x27' + enr.enrollmentId + '\x27)" style="color:var(--red);cursor:pointer;font-size:9px;margin-left:4px">✕</span></div>';
+    }
+    // Disconnected enrollments — show reconnect banner
+    for (var di = 0; di < tellerDisconnected.length; di++) {
+      var disc = tellerDisconnected[di];
+      enrollmentTags += '<div style="display:flex;align-items:center;gap:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.35);border-radius:6px;padding:4px 10px;font-size:10px;font-family:\'DM Mono\',monospace;color:var(--amber)">'
+        + '<span>⚠</span> ' + disc.institution + ' disconnected'
+        + ' <button onclick="tellerConnect()" style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);color:var(--amber);padding:2px 8px;border-radius:4px;font-size:9px;font-family:\'DM Mono\',monospace;cursor:pointer;white-space:nowrap">↻ Reconnect</button>'
+        + ' <span onclick="tellerRemoveDisconnected(\x27' + disc.enrollmentId + '\x27)" style="color:var(--red);cursor:pointer;font-size:9px;margin-left:2px" title="Remove">✕</span></div>';
     }
     enrollmentTags += '</div>';
   }
@@ -3491,6 +3500,7 @@ var tellerEnrollmentsFull = [];   // [{ enrollmentId, institution, accessToken }
 var tellerLastSync        = '';   // human-readable last sync time
 var tellerAllAccounts     = [];   // all accounts returned by Teller (before filtering)
 var tellerAllowedIds      = null; // Set of tellerId strings to show — null means first-run (show picker)
+var tellerDisconnected    = [];   // [{ enrollmentId, institution }] — enrollments needing reconnection
 var jnSyncing        = false;
 var billSyncing      = false;
 var asanaSyncing     = false;
@@ -3927,12 +3937,13 @@ function tellerRefresh() {
       if (data.errors && data.errors.length) {
         console.warn('Teller partial errors:', data.errors);
       }
-      // Show reconnect warning for disconnected enrollments but DON'T auto-remove
-      // User must explicitly disconnect via the X button
+      // Store disconnected enrollments and re-render accounts to show reconnect banners
       if (data.disconnected && data.disconnected.length) {
-        data.disconnected.forEach(function(d) {
-          showSyncStatus('⚠️ ' + d.institution + ' needs reconnection — click Connect Bank', 'var(--amber)');
+        tellerDisconnected = data.disconnected.map(function(d) {
+          return { enrollmentId: d.enrollmentId, institution: d.institution };
         });
+      } else {
+        tellerDisconnected = [];
       }
       var now = new Date();
       tellerLastSync = (now.getHours() % 12 || 12) + ':' + String(now.getMinutes()).padStart(2,'0') + ' ' + (now.getHours() >= 12 ? 'PM' : 'AM');
@@ -3972,6 +3983,18 @@ function tellerDisconnect(enrollmentId) {
     .catch(function(err) {
       showSyncStatus('Disconnect failed: ' + err.message, 'var(--red)');
     });
+}
+
+// Remove a disconnected enrollment from the warning banner and from Sheets token store
+function tellerRemoveDisconnected(enrollmentId) {
+  if (!confirm('Remove this disconnected enrollment? It will stop appearing in the reconnect prompt.')) return;
+  tellerDisconnected = tellerDisconnected.filter(function(d){ return d.enrollmentId !== enrollmentId; });
+  // Also remove the stale token from Sheets so it doesn't keep appearing
+  if (SHEETS_URL) {
+    fetch(SHEETS_URL + '?action=teller_remove_token&enrollmentId=' + encodeURIComponent(enrollmentId) + '&t=' + Date.now())
+      .catch(function(){});  // fire and forget
+  }
+  renderAccounts();
 }
 
 // ── TELLER ACCOUNT PICKER ─────────────────────────────────────────
