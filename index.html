@@ -365,6 +365,10 @@
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
       6-Week Cash Outflow
     </div>
+    <div class="nav-item" onclick="navigate('forecast13',this)">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      13-Week Forecast
+    </div>
     <div class="nav-item" onclick="navigate('revenue',this)">
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       Revenue Required
@@ -403,7 +407,6 @@
     <div class="nav-item" onclick="navigate('accounts',this)">
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
       Account Balances
-      <span class="plaid-tag">PLAID</span>
     </div>
   </div>
 
@@ -446,10 +449,6 @@
     <div class="nav-item" onclick="navigate('concentration',this)">
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
       Customer Risk
-    </div>
-    <div class="nav-item" onclick="navigate('forecast13',this)">
-      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-      13-Week Forecast
     </div>
     <div class="nav-item" onclick="navigate('paydown',this)">
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
@@ -1598,21 +1597,21 @@ function ohLoad() {
       // Default seed data
       ohData = {
         overhead: [
-          { name: 'Rent / Facility', amount: 8500 },
-          { name: 'Electricity & Gas', amount: 1200 },
-          { name: 'Internet & Phone', amount: 350 },
-          { name: 'Software / Subscriptions', amount: 620 },
-          { name: 'Insurance (General)', amount: 1800 },
-          { name: 'Vehicle / Equipment Lease', amount: 2400 }
+          { name: 'Rent / Facility',            amount: 8500, dueDay: 1  },
+          { name: 'Electricity & Gas',           amount: 1200, dueDay: 15 },
+          { name: 'Internet & Phone',            amount: 350,  dueDay: 10 },
+          { name: 'Software / Subscriptions',    amount: 620,  dueDay: 1  },
+          { name: 'Insurance (General)',          amount: 1800, dueDay: 1  },
+          { name: 'Vehicle / Equipment Lease',   amount: 2400, dueDay: 1  }
         ],
         labor: [
           { name: 'Office Manager', pay: 5200, burden: 22 },
-          { name: 'Estimator', pay: 6500, burden: 22 }
+          { name: 'Estimator',      pay: 6500, burden: 22 }
         ],
         debt: [
           { name: 'Equipment Loan (Ironworker)', amount: 3800 },
-          { name: 'Business Line of Credit', amount: 2100 },
-          { name: 'Vehicle Loan', amount: 1450 }
+          { name: 'Business Line of Credit',     amount: 2100 },
+          { name: 'Vehicle Loan',                amount: 1450 }
         ]
       };
     }
@@ -1683,10 +1682,14 @@ function ohRenderSection(section) {
   } else {
     var rows = ohData[section];
     rows.forEach(function(row, i) {
+      var dueDayInput = (section === 'overhead')
+        ? '<input class="oh-input" type="number" placeholder="Day" min="1" max="31" style="width:60px" value="' + (row.dueDay||'') + '" title="Due day of month (1-31)" oninput="ohUpdateField(\x27' + section + '\x27,' + i + ',\x27dueDay\x27,this.value)"/>'
+        : '';
       html += '<div class="oh-row" draggable="true" data-section="' + section + '" data-idx="' + i + '" style="margin-bottom:6px">'
         + '<div class="oh-drag-handle" title="Drag to reorder">' + OH_HANDLE_SVG + '</div>'
         + '<input class="oh-input name" placeholder="Description" value="' + (row.name||'').replace(/"/g,'&quot;') + '" oninput="ohUpdateField(\x27' + section + '\x27,' + i + ',\x27name\x27,this.value)"/>'
         + '<input class="oh-input" type="number" placeholder="0" value="' + (row.amount||'') + '" oninput="ohUpdateField(\x27' + section + '\x27,' + i + ',\x27amount\x27,this.value)"/>'
+        + dueDayInput
         + '<button class="oh-del-btn" onclick="ohDeleteRow(\x27' + section + '\x27,' + i + ')">×</button>'
         + '</div>';
     });
@@ -2102,13 +2105,15 @@ async function sendMessage(){
 
 // ── PAYROLL SETTINGS ─────────────────────────────────────────────
 let biweeklyPayroll = 84000;
+var ornMaterialsPct = 24; // % of ornamental revenue allocated to materials
+var strMaterialsPct = 30; // % of structural revenue allocated to materials
 
 // Non-payroll costs per week (fixed: vendor/subs + overhead + loans + CC)
 // WK arrays now computed dynamically — see getWkNonPay()
 
 function saveRentToSettings() {
   if (!SHEETS_URL) return;
-  fetch(SHEETS_URL, { method:'POST', body: JSON.stringify({ type:'settings', settings:{ biweeklyPayroll: biweeklyPayroll, rentAmount: rentAmount } }) });
+  fetch(SHEETS_URL, { method:'POST', body: JSON.stringify({ type:'settings', settings:{ biweeklyPayroll: biweeklyPayroll, ornMaterialsPct: ornMaterialsPct, strMaterialsPct: strMaterialsPct } }) });
 }
 function updatePayroll(val) {
   const n = parseInt(val.replace(/[^0-9]/g,''), 10);
@@ -2153,8 +2158,6 @@ var WK_ENDS   = _wb.ends;
 var WK_LBLS   = _wb.labels;
 var WK_PAY    = _wb.pay;
 
-var rentAmount = 8500; // editable fixed overhead
-
 function billWeekIndex(dueDateStr) {
   var due = new Date(dueDateStr);
   // Past due → week 0 (pay now)
@@ -2189,29 +2192,54 @@ function computeWkDebtService() {
   return [weekly, weekly, weekly, weekly, weekly, weekly].map(Math.round);
 }
 
-function computeWkRent() {
-  // Rent falls in the week containing the 1st of each month
-  // Find the next two 1st-of-month dates within the 6-week window
-  var result = [0,0,0,0,0,0];
-  var windowStart = new Date(WK_STARTS[0]);
-  var windowEnd   = new Date(WK_ENDS[5]);
-  var d = new Date(windowStart.getFullYear(), windowStart.getMonth(), 1);
-  for (var m = 0; m < 3; m++) {
-    var rentDate = new Date(d.getFullYear(), d.getMonth() + m, 1);
-    if (rentDate >= windowStart && rentDate <= windowEnd) {
-      var wi = billWeekIndex(rentDate.toISOString().split('T')[0]);
-      if (wi >= 0) result[wi] += rentAmount;
+function computeWkOverhead() {
+  // Place each overhead item in the week containing its dueDay.
+  // Items without a dueDay are spread evenly across all 6 weeks (fallback).
+  ohLoad();
+  var result  = [0, 0, 0, 0, 0, 0];
+  var spreadAmt = 0; // accumulate items with no due day
+
+  ohData.overhead.forEach(function(row) {
+    var amt     = parseFloat(row.amount) || 0;
+    if (!amt) return;
+    var dueDay  = parseInt(row.dueDay);
+    if (!dueDay || dueDay < 1 || dueDay > 31) {
+      spreadAmt += amt;
+      return;
     }
+    // Find which week(s) within the 6-week window this due day falls in
+    var placed = false;
+    var windowStart = new Date(WK_STARTS[0]);
+    var windowEnd   = new Date(WK_ENDS[5]);
+    // Check current month and next two months
+    for (var m = 0; m < 3; m++) {
+      var base    = new Date(windowStart.getFullYear(), windowStart.getMonth() + m, 1);
+      var maxDay  = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+      var day     = Math.min(dueDay, maxDay);
+      var dueDate = new Date(base.getFullYear(), base.getMonth(), day);
+      if (dueDate >= windowStart && dueDate <= windowEnd) {
+        var wi = billWeekIndex(dueDate.toISOString().split('T')[0]);
+        if (wi >= 0) { result[wi] += amt; placed = true; }
+      }
+    }
+    if (!placed) spreadAmt += amt; // outside window — spread as fallback
+  });
+
+  // Spread fallback items evenly
+  if (spreadAmt > 0) {
+    var perWk = Math.round(spreadAmt / 6);
+    for (var i = 0; i < 6; i++) result[i] += perWk;
   }
+
   return result;
 }
 
 function getWkNonPay() {
   // Total non-payroll outflow per week
-  var bills_wk  = computeWkBills();
-  var debt_wk   = computeWkDebtService();
-  var rent_wk   = computeWkRent();
-  return bills_wk.map(function(b, i){ return b + debt_wk[i] + rent_wk[i]; });
+  var bills_wk    = computeWkBills();
+  var debt_wk     = computeWkDebtService();
+  var overhead_wk = computeWkOverhead();
+  return bills_wk.map(function(b, i){ return b + debt_wk[i] + overhead_wk[i]; });
 }
 
 function wkTotal(i) {
@@ -2237,7 +2265,6 @@ function renderOutflow() {
   var wkNonPay  = getWkNonPay();
   var bills_wk  = computeWkBills();
   var debt_wk   = computeWkDebtService();
-  var rent_wk   = computeWkRent();
   var totals    = wkNonPay.map(function(np, i){ return np + (WK_PAY[i] ? biweeklyPayroll : 0); });
   var maxWk     = Math.max.apply(null, totals);
   var total6w   = totals.reduce(function(s,v){ return s+v; }, 0);
@@ -2268,7 +2295,8 @@ function renderOutflow() {
     +'<div class="card-sm"><div class="kl">Cash on Hand</div><div class="kv green">'+fmt(totalCash)+'</div><div class="ks">Deposit accounts · live</div></div>'
     +'</div>';
 
-  // Payroll + Rent editors
+  // Payroll + Overhead editors
+  var overhead_wk = computeWkOverhead();
   var editor = '<div class="g2 mb16" style="gap:12px">'
     // Payroll editor
     +'<div class="card" style="border-color:rgba(245,158,11,0.3)">'
@@ -2281,14 +2309,16 @@ function renderOutflow() {
         +'</div>'
       +'</div>'
     +'</div>'
-    // Rent editor
-    +'<div class="card" style="border-color:rgba(59,130,246,0.3)">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">'
-        +'<div><div class="sec" style="margin-bottom:3px">Monthly Rent</div>'
-          +'<div style="font-size:10px;font-family:\'DM Mono\',monospace;color:var(--white-faint)">Fixed overhead · due on the 1st</div></div>'
-        +'<div style="display:flex;align-items:center;gap:8px">'
-          +'<input type="number" id="rent-input" value="'+rentAmount+'" style="background:var(--navy-5);border:1px solid rgba(59,130,246,0.4);color:var(--white);padding:7px 11px;border-radius:6px;font-size:14px;font-weight:700;font-family:\'DM Mono\',monospace;width:120px;outline:none"/>'
-          +'<button onclick="updateRent()" style="background:linear-gradient(135deg,#3B82F6,#2563EB);border:none;color:white;padding:7px 14px;border-radius:6px;font-size:11px;font-weight:700;font-family:\'DM Mono\',monospace;cursor:pointer">Update ↵</button>'
+    // Overhead summary — source of truth is Overhead Calc
+    +'<div class="card" style="border-color:rgba(59,130,246,0.2);background:var(--navy-3)">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'
+        +'<div>'
+          +'<div style="font-size:11px;font-weight:600;margin-bottom:2px">Overhead · Due-Date Scheduled</div>'
+          +'<div style="font-size:10px;font-family:\'DM Mono\',monospace;color:var(--white-faint)">Each item placed in its due-date week · Edit in <span onclick="navigate(\'overhead\',document.querySelector(\'[onclick*=overhead]\'))" style="color:var(--accent);cursor:pointer;text-decoration:underline">Overhead Calc</span></div>'
+        +'</div>'
+        +'<div style="text-align:right">'
+          +'<div style="font-size:18px;font-weight:800;font-family:\'DM Mono\',monospace;color:var(--accent)">'+fmt(overhead_wk.reduce(function(s,v){return s+v;},0))+'</div>'
+          +'<div style="font-size:9px;font-family:\'DM Mono\',monospace;color:var(--white-faint)">6-wk overhead total</div>'
         +'</div>'
       +'</div>'
     +'</div>'
@@ -2320,8 +2350,8 @@ function renderOutflow() {
     var payCell = isPay
       ? '<td class="m" style="color:var(--amber)">'+fmt(biweeklyPayroll)+'</td>'
       : '<td class="m" style="color:var(--white-faint)">—</td>';
-    var rentCell = rent_wk[i] > 0
-      ? '<td class="m" style="color:var(--accent)">'+fmt(rent_wk[i])+'</td>'
+    var ohCell = overhead_wk[i] > 0
+      ? '<td class="m" style="color:var(--accent)">'+fmt(overhead_wk[i])+'</td>'
       : '<td class="m" style="color:var(--white-faint)">—</td>';
     var statusPill = t > BASE_INFLOW[i]
       ? '<span class="pill r">GAP RISK</span>'
@@ -2331,7 +2361,7 @@ function renderOutflow() {
       +'<td class="b">'+lbl+(isPay?' ✦':'')+'</td>'
       +payCell
       +'<td class="m">'+fmt(bills_wk[i])+'</td>'
-      +rentCell
+      +ohCell
       +'<td class="m">'+fmt(debt_wk[i])+'</td>'
       +'<td class="'+tCol+'">'+fmt(t)+'</td>'
       +'<td>'+statusPill+'</td>'
@@ -2347,21 +2377,14 @@ function renderOutflow() {
     +'<div class="sec">Payment Breakdown by Week</div>'
     +importNote
     +'<table><thead><tr>'
-      +'<th>Week</th><th>Payroll</th><th>AP Bills Due</th><th>Rent</th><th>Debt Service</th><th>Total</th><th>Status</th>'
+      +'<th>Week</th><th>Payroll</th><th>AP Bills Due</th><th>Overhead</th><th>Debt Service</th><th>Total</th><th>Status</th>'
     +'</tr></thead><tbody>'+rows+'</tbody></table>'
   +'</div>';
 
   el.innerHTML = alertHtml + kpis + editor + viz + table;
 }
 
-function updateRent() {
-  var val = parseFloat(document.getElementById('rent-input').value);
-  if (!isNaN(val) && val >= 0) {
-    rentAmount = val;
-    renderOutflow();
-    renderDashboard();
-  }
-}
+
 
 
 // ── REVENUE REQUIRED ─────────────────────────────────────────────
@@ -3356,8 +3379,9 @@ function loadFromSheets() {
       var ap = data.asanaProjects || [];
       if (ap.length) { asanaProjects = ap; }
       var s = data.settings || {};
-      if (s.biweeklyPayroll) biweeklyPayroll = Number(s.biweeklyPayroll);
-      if (s.rentAmount)     rentAmount     = Number(s.rentAmount);
+      if (s.biweeklyPayroll)  biweeklyPayroll  = Number(s.biweeklyPayroll);
+      if (s.ornMaterialsPct)  ornMaterialsPct  = Number(s.ornMaterialsPct);
+      if (s.strMaterialsPct)  strMaterialsPct  = Number(s.strMaterialsPct);
       if (s.closeRate)       closeRate       = Number(s.closeRate);
       if (s.tellerAllowedIds) {
         try {
@@ -3433,7 +3457,7 @@ function saveSettings() {
   if (!SHEETS_URL) return;
   fetch(SHEETS_URL, {
     method: 'POST',
-    body: JSON.stringify({ type:'settings', settings:{ biweeklyPayroll:biweeklyPayroll, closeRate:closeRate, avgDealSize:avgDealSize } })
+    body: JSON.stringify({ type:'settings', settings:{ biweeklyPayroll:biweeklyPayroll, closeRate:closeRate, avgDealSize:avgDealSize, ornMaterialsPct:ornMaterialsPct, strMaterialsPct:strMaterialsPct } })
   }).then(function() {
     showSyncStatus('Saved', 'var(--green)');
   }).catch(function() {
@@ -4081,7 +4105,6 @@ function saveTellerPicker() {
       method: 'POST',
       body: JSON.stringify({ type: 'settings', settings: {
         biweeklyPayroll: biweeklyPayroll,
-        rentAmount: rentAmount,
         tellerAllowedIds: JSON.stringify(Array.from(allowed))
       }})
     }).catch(function(){});
@@ -4541,6 +4564,13 @@ function renderConcentration() {
 // 4. 13-WEEK FORECAST — render13Week()
 // ══════════════════════════════════════════════════════════════════
 
+function getMonthlyOverheadTotal() {
+  ohLoad();
+  return ohData.overhead.reduce(function(s,r){ return s + (parseFloat(r.amount)||0); }, 0)
+       + ohData.labor.reduce(function(s,r){ return s + (parseFloat(r.pay)||0) * (1 + (parseFloat(r.burden)||0)/100); }, 0)
+       + ohData.debt.reduce(function(s,r){ return s + (parseFloat(r.amount)||0); }, 0);
+}
+
 // Weeks 7-13 estimates (beyond current 6-week data)
 // Labels computed dynamically from the 6-week window
 var EXT_WEEK_LBLS = (function() {
@@ -4695,7 +4725,8 @@ function render13Week() {
 
   // Outflow breakdown over 13 weeks
   var totalPayroll = allPay.reduce(function(s,p){return s+p;},0) * biweeklyPayroll;
-  var totalRent    = 13 * rentAmount;
+  var monthlyOH    = getMonthlyOverheadTotal();
+  var totalOH13     = Math.round(monthlyOH / 4.33 * 13);
   var apTotal      = bills.filter(function(b){return b.status==='active';}).reduce(function(s,b){return s+b.amt;},0);
   var debtTotal    = Math.max(0, totalOutflow13 - totalPayroll - totalRent - apTotal);
 
@@ -4832,7 +4863,7 @@ function renderPaydown() {
   // ── Fixed outflows per week ───────────────────────────────────
   var fixedByWeek = allStarts.map(function(ws, i) {
     var isPayroll = (i % 2 === 0);
-    return rentAmount + (isPayroll ? biweeklyPayroll : 0);
+    return Math.round(getMonthlyOverheadTotal() / 4.33) + (isPayroll ? biweeklyPayroll : 0);
   });
 
   // ── Past-due AP bills — copy and sort for assignment ─────────
