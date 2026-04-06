@@ -337,6 +337,61 @@
   .pin-error{font-size:10px;font-family:'DM Mono',monospace;min-height:16px;margin-top:6px;}
   /* SYNC STATUS */
   #sync-status{font-size:9px;font-family:'DM Mono',monospace;transition:opacity .5s;opacity:0;white-space:nowrap;}
+  /* SYNC ALL BUTTON */
+  .sync-all-btn{display:flex;align-items:center;gap:6px;background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:7px;font-size:11px;font-weight:600;font-family:'DM Mono',monospace;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+  .sync-all-btn:hover{background:var(--navy-5);color:var(--white);}
+  .sync-all-btn.syncing{border-color:rgba(59,130,246,0.4);color:var(--accent);}
+  .sync-all-btn.done{border-color:rgba(16,185,129,0.4);color:#10B981;}
+  .sync-all-btn.error{border-color:rgba(239,68,68,0.4);color:var(--red);}
+  .sync-spin{display:inline-block;animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  /* AI ADVISOR DRAWER */
+  .ai-panel{position:fixed;top:0;right:-520px;width:500px;height:100vh;background:var(--navy-2);border-left:1px solid var(--border-bright);display:flex;flex-direction:column;z-index:100;transition:right 0.3s cubic-bezier(0.4,0,0.2,1);box-shadow:-8px 0 40px rgba(0,0,0,0.5);}
+  .ai-panel.open{right:0;}
+  .ai-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border);background:var(--navy-3);flex-shrink:0;}
+  .ai-avatar{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#6366F1,#8B5CF6);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .ai-title{font-size:13px;font-weight:700;}
+  .ai-subtitle{font-size:10px;color:var(--white-faint);font-family:'DM Mono',monospace;margin-top:1px;}
+  .ai-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+  .ai-body::-webkit-scrollbar{width:3px;} .ai-body::-webkit-scrollbar-thumb{background:var(--navy-5);}
+  /* Analyze section */
+  .ai-analyze-section{padding:16px 18px;border-bottom:1px solid var(--border);flex-shrink:0;}
+  .ai-analyze-btn{width:100%;padding:11px;background:linear-gradient(135deg,#6366F1,#4F46E5);border:none;color:white;border-radius:8px;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer;transition:opacity 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .ai-analyze-btn:hover{opacity:0.88;}
+  .ai-analyze-btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .ai-sync-note{font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-top:6px;text-align:center;}
+  /* Analysis output cards */
+  .ai-results{padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
+  .ai-result-card{background:var(--navy-3);border:1px solid var(--border);border-radius:9px;padding:14px 16px;}
+  .ai-result-card-header{display:flex;align-items:center;gap:7px;margin-bottom:10px;}
+  .ai-result-card-icon{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+  .ai-result-card-title{font-size:11px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:0.05em;}
+  .ai-result-body{font-size:12px;color:var(--white-dim);line-height:1.6;}
+  .ai-result-body strong{color:var(--white);font-weight:600;}
+  .ai-result-body p{margin-bottom:6px;}
+  .ai-result-body p:last-child{margin-bottom:0;}
+  .ai-result-body ul{margin:4px 0 6px 14px;padding:0;}
+  .ai-result-body li{margin-bottom:3px;}
+  .ai-risk-item{background:var(--navy-4);border-left:3px solid var(--red);border-radius:0 5px 5px 0;padding:7px 10px;margin-bottom:6px;font-size:11px;color:var(--white-dim);line-height:1.4;}
+  .ai-risk-item.warn{border-left-color:var(--amber);}
+  .ai-risk-item.ok{border-left-color:#10B981;}
+  .ai-risk-item:last-child{margin-bottom:0;}
+  .ai-ap-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--navy-4);border-radius:5px;margin-bottom:5px;font-size:11px;}
+  .ai-ap-row:last-child{margin-bottom:0;}
+  .ai-ap-priority{font-size:9px;font-weight:700;font-family:'DM Mono',monospace;padding:2px 6px;border-radius:3px;}
+  .ai-ap-priority.now{background:rgba(239,68,68,0.2);color:var(--red);}
+  .ai-ap-priority.soon{background:rgba(245,158,11,0.2);color:var(--amber);}
+  .ai-ap-priority.defer{background:rgba(255,255,255,0.07);color:var(--white-faint);}
+  .ai-skeleton{background:var(--navy-4);border-radius:4px;animation:pulse 1.2s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:0.4;}50%{opacity:0.8;}}
+  /* AI Chat section (bottom of drawer) */
+  .ai-chat-section{border-top:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
+  .ai-chat-label{font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);padding:8px 16px 4px;letter-spacing:0.06em;text-transform:uppercase;}
+  .ai-chat-messages{flex:1;overflow-y:auto;padding:8px 16px;max-height:220px;min-height:60px;}
+  .ai-chat-messages::-webkit-scrollbar{width:3px;} .ai-chat-messages::-webkit-scrollbar-thumb{background:var(--navy-5);}
+  .ai-chat-input-bar{display:flex;align-items:flex-end;gap:8px;padding:10px 16px;border-top:1px solid var(--border);background:var(--navy-3);flex-shrink:0;}
+  .ai-key-bar{padding:8px 16px;background:var(--navy-4);border-bottom:1px solid var(--border);flex-shrink:0;}
+  .ai-key-bar.hidden{display:none;}
   /* SHEETS MODAL */
   .url-modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:500;display:flex;align-items:center;justify-content:center;}
   .url-modal-card{background:var(--navy-2);border:1px solid var(--border-bright);border-radius:12px;padding:24px;width:480px;max-width:90vw;}
@@ -480,9 +535,13 @@
       <span id="sync-status"></span>
       <div class="date-badge" id="topbar-date"></div>
       <div class="mock-badge" style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#10B981">⚡ Phase 1 — Live Data</div>
-      <button class="chat-toggle-btn" onclick="toggleChat()" title="Ask your CFO AI">
-        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-        Ask CFO AI
+      <button class="sync-all-btn" id="sync-all-btn" onclick="syncAll()" title="Sync all data sources">
+        <svg id="sync-all-icon" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        <span id="sync-all-label">Sync All</span>
+      </button>
+      <button class="chat-toggle-btn" onclick="toggleAIPanel()" title="AI Advisor">
+        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+        AI Advisor
         <span class="chat-dot" id="chat-dot"></span>
       </button>
     </div>
@@ -1064,57 +1123,98 @@
     </div><!-- /content -->
 </div><!-- /main -->
 
-<!-- CHAT PANEL -->
-<div class="chat-overlay" id="chat-overlay" onclick="toggleChat()"></div>
-<div class="chat-panel" id="chat-panel">
-  <div class="chat-header">
-    <div class="chat-header-left">
-      <div class="chat-avatar">
-        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+<!-- AI ADVISOR DRAWER -->
+<div class="chat-overlay" id="ai-overlay" onclick="toggleAIPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:99;"></div>
+<div class="ai-panel" id="ai-panel">
+  <!-- Header -->
+  <div class="ai-header">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="ai-avatar">
+        <svg width="14" height="14" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
       </div>
       <div>
-        <div class="chat-title">CFO AI Assistant</div>
-        <div class="chat-subtitle">Powered by Claude · Full financial context</div>
+        <div class="ai-title">AI Advisor</div>
+        <div class="ai-subtitle">Powered by Claude · Grizzly Iron Financial Intelligence</div>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:7px">
-      <button class="chat-clear-btn" onclick="clearChat()" title="Clear">
+      <button class="chat-clear-btn" onclick="clearAIResults()" title="Clear analysis">
         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
       </button>
-      <button class="chat-close-btn" onclick="toggleChat()">✕</button>
+      <button class="chat-close-btn" onclick="toggleAIPanel()">✕</button>
     </div>
   </div>
-  <div class="chat-key-bar" id="chat-key-bar">
-    <div style="font-size:10px;color:var(--white-dim);margin-bottom:5px;font-family:'DM Mono',monospace">Enter Anthropic API key to enable live Claude responses:</div>
-    <div style="display:flex;gap:7px">
-      <input type="password" id="api-key-input" placeholder="sk-ant-..." class="chat-key-input"/>
-      <button class="chat-key-save-btn" onclick="saveKey()">Save</button>
+
+  <!-- API Key status bar (shown only if key not loaded) -->
+  <div class="ai-key-bar" id="ai-key-bar">
+    <div style="font-size:10px;color:var(--amber);font-family:'DM Mono',monospace;display:flex;align-items:center;gap:6px;">
+      <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+      Anthropic API key not found — add <strong style="margin:0 3px">ANTHROPIC_KEY</strong> to Apps Script Script Properties
     </div>
-    <div style="font-size:9px;color:var(--white-faint);margin-top:4px;font-family:'DM Mono',monospace">Stored in memory only · sent only to Anthropic</div>
   </div>
-  <div class="chat-messages" id="chat-messages">
-    <div class="chat-msg assistant">
-      <div class="msg-bubble">
-        <p>Hi! I'm your CFO AI. I have full context on your cash position, payables, pipeline, payroll taxes, debt, and more.</p>
-        <p style="margin-top:6px">Try asking:</p>
-        <div class="chat-suggestions">
-          <button class="chat-sug" onclick="sendSuggestion(this)">Can we afford a $14k tile saw this month?</button>
-          <button class="chat-sug" onclick="sendSuggestion(this)">What's our biggest cash risk in the next 3 weeks?</button>
-          <button class="chat-sug" onclick="sendSuggestion(this)">How much extra revenue covers a $500/mo equipment loan?</button>
-          <button class="chat-sug" onclick="sendSuggestion(this)">When will we hit our buffer target?</button>
-          <button class="chat-sug" onclick="sendSuggestion(this)">What's our break-even revenue this week?</button>
-          <button class="chat-sug" onclick="sendSuggestion(this)">Can I take a $10k owner draw this month?</button>
+
+  <!-- Scrollable body -->
+  <div class="ai-body" id="ai-body">
+
+    <!-- Analyze section -->
+    <div class="ai-analyze-section">
+      <button class="ai-analyze-btn" id="ai-analyze-btn" onclick="runAnalysis()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <span id="ai-analyze-label">Analyze My Finances</span>
+      </button>
+      <div class="ai-sync-note" id="ai-sync-note">Syncs data if last sync was &gt;1 hour ago</div>
+    </div>
+
+    <!-- Analysis results -->
+    <div class="ai-results" id="ai-results" style="display:none;">
+
+      <!-- Summary card -->
+      <div class="ai-result-card">
+        <div class="ai-result-card-header">
+          <div class="ai-result-card-icon" style="background:rgba(99,102,241,0.2);">📊</div>
+          <div class="ai-result-card-title" style="color:#818CF8;">FINANCIAL SUMMARY</div>
+        </div>
+        <div class="ai-result-body" id="ai-summary-body"><div class="ai-skeleton" style="height:12px;width:100%;margin-bottom:6px;"></div><div class="ai-skeleton" style="height:12px;width:85%;margin-bottom:6px;"></div><div class="ai-skeleton" style="height:12px;width:92%;"></div></div>
+      </div>
+
+      <!-- Risk callouts card -->
+      <div class="ai-result-card">
+        <div class="ai-result-card-header">
+          <div class="ai-result-card-icon" style="background:rgba(239,68,68,0.15);">⚠️</div>
+          <div class="ai-result-card-title" style="color:#F87171;">RISK & ANOMALY CALLOUTS</div>
+        </div>
+        <div id="ai-risks-body"><div class="ai-skeleton" style="height:40px;border-radius:5px;margin-bottom:6px;"></div><div class="ai-skeleton" style="height:40px;border-radius:5px;"></div></div>
+      </div>
+
+      <!-- AP Prioritization card -->
+      <div class="ai-result-card">
+        <div class="ai-result-card-header">
+          <div class="ai-result-card-icon" style="background:rgba(245,158,11,0.15);">💳</div>
+          <div class="ai-result-card-title" style="color:#FCD34D;">AP PRIORITIZATION</div>
+        </div>
+        <div id="ai-ap-body"><div class="ai-skeleton" style="height:32px;border-radius:5px;margin-bottom:5px;"></div><div class="ai-skeleton" style="height:32px;border-radius:5px;margin-bottom:5px;"></div><div class="ai-skeleton" style="height:32px;border-radius:5px;"></div></div>
+      </div>
+
+    </div><!-- /ai-results -->
+
+    <!-- Q&A Chat section -->
+    <div class="ai-chat-section">
+      <div class="ai-chat-label">Ask a question</div>
+      <div class="ai-chat-messages" id="chat-messages">
+        <div class="chat-msg assistant">
+          <div class="msg-bubble"><p style="font-size:11px;color:var(--white-faint)">Run an analysis above, then ask follow-up questions here — I'll have full context on your numbers.</p></div>
         </div>
       </div>
+      <div class="ai-chat-input-bar">
+        <textarea id="chat-input" class="chat-textarea" placeholder="Ask anything about your finances..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="chat-send-btn" id="chat-send-btn" onclick="sendMessage()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+        </button>
+      </div>
     </div>
-  </div>
-  <div class="chat-input-bar">
-    <textarea id="chat-input" class="chat-textarea" placeholder="Ask anything about your finances..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-    <button class="chat-send-btn" id="chat-send-btn" onclick="sendMessage()">
-      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-    </button>
-  </div>
-</div>
+
+  </div><!-- /ai-body -->
+</div><!-- /ai-panel -->
 
 <script>
 // ── NAVIGATION ──────────────────────────────────────────────────
@@ -1986,67 +2086,300 @@ function runScenario(){
 // init — called in DOMContentLoaded so DOM exists
 
 // ── CFO AI CHAT ──────────────────────────────────────────────────
-let chatOpen=false, apiKey='', chatHistory=[], isThinking=false;
+// ── AI ADVISOR STATE ─────────────────────────────────────────────
+let aiPanelOpen=false, apiKey='', chatHistory=[], isThinking=false;
+let lastAnalysisSnapshot=''; // snapshot text used in last analysis, shared with Q&A chat
 
+// ── LAST SYNC TRACKING (localStorage) ────────────────────────────
+function getLastSyncedAt(){ try{ return parseInt(localStorage.getItem('ccc_lastSyncedAt')||'0',10); }catch(e){return 0;} }
+function setLastSyncedAt(){ try{ localStorage.setItem('ccc_lastSyncedAt', Date.now()); }catch(e){} updateSyncAllBtn(); }
+function syncAgeMinutes(){ return Math.round((Date.now()-getLastSyncedAt())/60000); }
+
+function updateSyncAllBtn(){
+  var btn=document.getElementById('sync-all-btn');
+  var lbl=document.getElementById('sync-all-label');
+  if(!btn||!lbl) return;
+  var ts=getLastSyncedAt();
+  if(!ts){ lbl.textContent='Sync All'; return; }
+  var mins=syncAgeMinutes();
+  if(mins<60) lbl.textContent='Synced '+mins+'m ago';
+  else if(mins<120) lbl.textContent='Synced 1h ago';
+  else lbl.textContent='Sync All';
+}
+
+// ── SYNC ALL ──────────────────────────────────────────────────────
+var _syncAllRunning=false;
+function syncAll(){
+  if(_syncAllRunning) return;
+  if(!SHEETS_URL){ showSyncStatus('No Sheets URL configured','var(--amber)'); return; }
+  _syncAllRunning=true;
+  var btn=document.getElementById('sync-all-btn');
+  var icon=document.getElementById('sync-all-icon');
+  var lbl=document.getElementById('sync-all-label');
+  if(btn){ btn.classList.add('syncing'); btn.disabled=true; }
+  if(icon) icon.outerHTML='<span class="sync-spin" id="sync-all-icon" style="font-size:13px">↻</span>';
+  if(lbl) lbl.textContent='Syncing...';
+  showSyncStatus('Syncing all sources...','var(--accent)');
+
+  // Run all four syncs in parallel — each is fire-and-forget with its own delay
+  var done={teller:false,jn:false,bill:false,asana:false};
+  function checkDone(){
+    if(done.teller&&done.jn&&done.bill&&done.asana){
+      _syncAllRunning=false;
+      setLastSyncedAt();
+      var iconEl=document.getElementById('sync-all-icon');
+      if(iconEl) iconEl.outerHTML='<svg id="sync-all-icon" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>';
+      if(btn){ btn.classList.remove('syncing'); btn.classList.add('done'); btn.disabled=false; }
+      if(lbl) lbl.textContent='Synced ✓';
+      showSyncStatus('All sources synced','var(--green)');
+      setTimeout(function(){
+        if(btn) btn.classList.remove('done');
+        updateSyncAllBtn();
+      },4000);
+    }
+  }
+
+  // Teller — resolves quickly (direct API)
+  try{ tellerRefresh(); } catch(e){}
+  setTimeout(function(){ done.teller=true; checkDone(); }, 8000);
+
+  // JobNimbus — fire-and-forget + 12s reload
+  try{ triggerJNSync(); } catch(e){}
+  setTimeout(function(){ done.jn=true; checkDone(); }, 14000);
+
+  // Bill.com — needs 20s
+  try{ triggerBillSync(); } catch(e){}
+  setTimeout(function(){ done.bill=true; checkDone(); }, 22000);
+
+  // Asana — needs 15s
+  try{ triggerAsanaSync(); } catch(e){}
+  setTimeout(function(){ done.asana=true; checkDone(); }, 17000);
+}
+
+// ── FINANCIAL SNAPSHOT (live data) ───────────────────────────────
 function getFinancialSnapshot(){
-  const activeBills=bills.filter(b=>b.status==='active');
-  const snoozedBills=bills.filter(b=>b.status==='snoozed');
-  const criticalBills=activeBills.filter(b=>b.pri==='critical');
-  const delinquentBills=activeBills.filter(b=>b.pri==='delinquent');
-  const totalDue=activeBills.reduce((s,b)=>s+b.amt,0);
-  const critTotal=criticalBills.reduce((s,b)=>s+b.amt,0);
-  const pastDueBills=activeBills.filter(b=>dAgo(b.due)>0);
-  const dep=plaidAccounts.filter(a=>a.type==='depository');
-  const totalCash=dep.reduce((s,a)=>s+a.avail,0);
-  return 'FINANCIAL SNAPSHOT — Custom Ironwork & Structural Steel — February 23, 2026 (Mock Data)\n\n'+
-    '=== CASH POSITION ===\nBusiness Checking: $183,200\nSavings/Buffer: $122,500\nTotal liquid cash: $305,700\nBuffer target (1 month): $197,400 (62% funded)\n\n'+
-    '=== 6-WEEK CASH OUTFLOW ===\nFeb 23: $98,200 (ON TRACK)\nMar 2: $112,400 (ON TRACK)\nMar 9: $148,400 (GAP RISK)\nMar 16: $134,600 (WATCH)\nMar 23: $118,900 (ON TRACK)\nMar 30: $130,300 (ON TRACK)\nTotal: $742,800 | Avg/wk: $123,800\nFixed: Payroll $84,000 biweekly (avg $42k/wk), Overhead $14,200/wk\n\n'+
-    '=== REVENUE PIPELINE ===\nNeeded: $742,800 | Pipeline: $618,400 | Gap: $124,400\nClose rate: 34% | Avg deal: $15,550 | Need ~8 new deals\n\n'+
-    '=== PROJECTS (Asana) ===\nHartwell Roof: $48,200 · 92% · Feb 26 · ON TRACK\nMeridian Commercial: $112,500 · 78% · Mar 3 · ON TRACK\nSunridge HOA: $67,800 · 54% · Mar 9 · AT RISK\nClearwater Office: $34,200 · 41% · Mar 9 · BEHIND\nThompson New Build: $53,200 · 38% · Mar 9 · BEHIND\nLakewood Apts: $89,400 · 65% · Mar 16 · ON TRACK\nRivera Estate: $142,800 · 71% · Mar 23 · ON TRACK\n\n'+
-    '=== PAYABLES TRIAGE ===\nActive bills: '+activeBills.length+' | Total due: '+fmt(totalDue)+'\nCritical: '+fmt(critTotal)+' | Past due: '+pastDueBills.length+'\nCritical: '+criticalBills.map(b=>b.vendor+' '+fmt(b.amt)).join(', ')+'\nDelinquent: '+delinquentBills.map(b=>b.vendor+' '+fmt(b.amt)+' ('+dAgo(b.due)+'d overdue)').join(', ')+'\n\n'+
-    '=== VENDOR TERMS ===\nSouthwest Steel: HOLDING $22k materials — must pay today\nPhoenix Crane: Demanding payment, threatening lien\nOwens Corning: Agreed Net 60 (verbal), wants $10k good faith Mar 1\n\n'+
-    '=== DEBT ===\nSBA Loan: $412,000 @ 7.2% · $8,240/mo · Jan 2034\nEquipment Loan: $187,400 @ 6.4% · $4,820/mo · Mar 2029\nVehicle Loan: $94,200 @ 5.9% · $3,100/mo · Aug 2028\nLOC: $118,000 drawn / $250,000 limit · $132k available (DEBT NOT CASH)\nChase CC: $28,400 / $50,000 (57%) · $850/mo min\nAmex CC: $14,600 / $35,000 (42%) · $440/mo min\nCap One CC: $0 / $30,000 (clean)\nTotal debt: $1,284,600 | Monthly service: $38,200\n\n'+
-    '=== PAYROLL TAX ===\n941 deposit due Feb 25: $10,500 (URGENT — 2 days)\n941 deposit due Feb 27: $10,500 (URGENT — 4 days)\nFUTA Q1 due Mar 31: $2,940\nAZ SUTA Q1 due Mar 31: $4,180\nForm 941 Q1 due Apr 30 (filing only)\n\n'+
-    '=== OWNER & TAX RESERVE ===\nEst annual net income: $228,000\nRecommended tax reserve: $57,000 (25%)\nCurrent tax reserve: $18,400 (32% funded — UNDERFUNDED)\nQ1 estimated tax due Apr 15: $14,250\nSafe monthly owner draw: $6,200\n\n'+
-    '=== BREAK-EVEN ===\nWeekly fixed costs: $65,750\nGross margin: ~37%\nWeekly break-even revenue: ~$104,400\nMonthly break-even: ~$451,000\n\n'+
-    '=== 30-DAY FORECAST ===\nProjected revenue: $477,000 | Outflow: $599,200\nNet: +$19,200 | Lowest cash: $149,200 (Week 3)\nEnd of month: $150,900';
+  var today=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  // Cash
+  var dep=plaidAccounts.filter(function(a){return a.type==='depository';});
+  var cred=plaidAccounts.filter(function(a){return a.type==='credit';});
+  var totalCash=dep.reduce(function(s,a){return s+a.avail;},0);
+  var cashLines=dep.map(function(a){return a.name+': '+fmt(a.avail);}).join('\n');
+  // Buffer
+  var bufferTarget=197400; // could be dynamic if exposed
+  var bufferPct=totalCash>0?Math.round(totalCash/bufferTarget*100):0;
+  // Bills
+  var activeBills=bills.filter(function(b){return b.status==='active';});
+  var totalDue=activeBills.reduce(function(s,b){return s+b.amt;},0);
+  var pastDue=activeBills.filter(function(b){return dAgo(b.due)>0;});
+  var critical=activeBills.filter(function(b){return b.pri==='critical';});
+  var delinquent=activeBills.filter(function(b){return b.pri==='delinquent';});
+  var billLines=activeBills.slice(0,15).map(function(b){
+    var age=dAgo(b.due)>0?' ('+dAgo(b.due)+'d OVERDUE)':' (due '+b.due+')';
+    return b.vendor+': '+fmt(b.amt)+age+(b.pri==='critical'?' [CRITICAL]':b.pri==='delinquent'?' [DELINQUENT]':'');
+  }).join('\n');
+  // Outflow weeks
+  var wkBills=computeWkBills();
+  var wkOh=computeWkOverhead();
+  var wkDebt=computeWkDebtService();
+  var outflowLines=WK_LBLS.map(function(lbl,i){
+    var payroll=WK_PAY[i]?biweeklyPayroll:0;
+    var total=wkBills[i]+wkOh[i]+wkDebt[i]+payroll;
+    return lbl+': '+fmt(total)+(WK_PAY[i]?' (payroll wk)':'');
+  }).join('\n');
+  var totalOutflow=WK_LBLS.reduce(function(s,_,i){
+    return s+wkBills[i]+wkOh[i]+wkDebt[i]+(WK_PAY[i]?biweeklyPayroll:0);
+  },0);
+  // Debt
+  var debtLines=liabilities.map(function(l){
+    return (l.name||l.vendor||'Loan')+': '+fmt(l.balance||0)+' @ '+((l.rate||0)+'%')+' · '+fmt(l.payment||0)+'/mo';
+  }).join('\n');
+  var totalDebtSvc=liabilities.reduce(function(s,l){return s+(l.payment||0);},0);
+  // Credit cards
+  var ccLines=cred.map(function(a){
+    var util=a.limit>0?Math.round(a.balance/a.limit*100):0;
+    return a.name+': '+fmt(a.balance)+'/'+fmt(a.limit)+' ('+util+'%) · '+fmt(a.payment||0)+'/mo min';
+  }).join('\n');
+  // Asana projects
+  var projLines=asanaProjects.slice(0,12).map(function(p){
+    var pct=p.percentComplete||0;
+    var remaining=p.draws?p.draws.filter(function(d){return !d.collected;}).reduce(function(s,d){return s+(d.amount||0);},0):0;
+    return (p.name||'Project')+': '+pct+'% complete · '+fmt(remaining)+' remaining';
+  }).join('\n');
+
+  return 'LIVE FINANCIAL SNAPSHOT — Grizzly Iron (Ornamental & Structural) — '+today+'\n\n'+
+    '=== CASH POSITION ===\n'+(cashLines||'No bank data loaded')+'\nTotal liquid: '+fmt(totalCash)+'\nBuffer target: '+fmt(bufferTarget)+' ('+bufferPct+'% funded)\n\n'+
+    '=== 6-WEEK CASH OUTFLOW ===\n'+outflowLines+'\nTotal 6wk: '+fmt(totalOutflow)+' | Avg/wk: '+fmt(Math.round(totalOutflow/6))+'\nBiweekly payroll: '+fmt(biweeklyPayroll)+'\n\n'+
+    '=== PAYABLES (Bill.com) ===\nActive bills: '+activeBills.length+' | Total due: '+fmt(totalDue)+'\nPast due: '+pastDue.length+' | Critical: '+critical.length+' | Delinquent: '+delinquent.length+'\n'+(billLines||'No bills loaded')+'\n\n'+
+    '=== PROJECT BACKLOG (Asana) ===\n'+(projLines||'No projects loaded')+'\n\n'+
+    '=== DEBT & CREDIT ===\n'+(debtLines||'No debt loaded')+'\n'+(ccLines||'')+'\nTotal monthly debt service: '+fmt(totalDebtSvc)+'\n\n'+
+    '=== PAYROLL ===\nBiweekly payroll: '+fmt(biweeklyPayroll)+' (avg '+fmt(Math.round(biweeklyPayroll/2))+'/wk)\n\n'+
+    '=== OVERHEAD (monthly fixed costs) ===\n'+(ohData&&ohData.length?ohData.map(function(o){return (o.label||o.name||'Item')+': '+fmt(o.amount||0)+(o.dueDay?' (due day '+o.dueDay+')':'');}).join('\n'):'No overhead data loaded');
 }
 
 function buildSystemPrompt(){
-  return 'You are a sharp, practical CFO assistant for a custom ironwork, ornamental and structural steel fabrication business in Arizona. You have real-time access to the financial data below. Answer questions directly with specific numbers. Be concise but complete. Flag risks clearly. When asked about purchases, factor in current cash, upcoming outflows, and which week it would hit. For loan questions, calculate the break-even revenue increase needed. Use plain language — the owner is operationally focused. Keep responses under 250 words unless a breakdown is truly needed. Format currency with $ and commas.\n\n'+getFinancialSnapshot();
+  lastAnalysisSnapshot=getFinancialSnapshot();
+  return 'You are a sharp, practical CFO assistant for Grizzly Iron, a custom ironwork and structural steel fabrication business in Arizona (two departments: Ornamental and Structural). You have real-time access to the live financial data below. Answer questions directly with specific numbers. Be concise but complete. Flag risks clearly. When asked about purchases, factor in current cash, upcoming outflows, and which week it would hit. Use plain language — the owner is operationally focused. Format currency with $ and commas.\n\n'+lastAnalysisSnapshot;
 }
 
-function toggleChat(){
-  chatOpen=!chatOpen;
-  document.getElementById('chat-panel').classList.toggle('open',chatOpen);
-  document.getElementById('chat-overlay').classList.toggle('open',chatOpen);
-  if(chatOpen){setTimeout(()=>document.getElementById('chat-input').focus(),300);updateKeyBar();}
+// ── AI ADVISOR PANEL ──────────────────────────────────────────────
+function toggleAIPanel(){
+  aiPanelOpen=!aiPanelOpen;
+  var panel=document.getElementById('ai-panel');
+  var overlay=document.getElementById('ai-overlay');
+  if(panel) panel.classList.toggle('open',aiPanelOpen);
+  if(overlay) overlay.style.display=aiPanelOpen?'block':'none';
+  if(aiPanelOpen){ updateKeyBar(); updateSyncAllBtn(); updateAISyncNote(); }
 }
 
 function updateKeyBar(){
-  const bar=document.getElementById('chat-key-bar');
-  const dot=document.getElementById('chat-dot');
-  if(apiKey){bar.classList.add('hidden');dot.classList.remove('no-key');}
-  else{bar.classList.remove('hidden');dot.classList.add('no-key');}
+  var bar=document.getElementById('ai-key-bar');
+  var dot=document.getElementById('chat-dot');
+  if(apiKey){ if(bar)bar.classList.add('hidden'); if(dot)dot.classList.remove('no-key'); }
+  else{ if(bar)bar.classList.remove('hidden'); if(dot)dot.classList.add('no-key'); }
 }
 
-function saveKey(){
-  const input=document.getElementById('api-key-input');
-  const val=input.value.trim();
-  if(val.startsWith('sk-ant-')||val.startsWith('sk-')){
-    apiKey=val;input.value='';updateKeyBar();
-    appendMsg('assistant','API key saved! Ask me anything about your finances.');
-  } else {
-    input.style.borderColor='var(--red)';
-    setTimeout(()=>input.style.borderColor='',1500);
+function updateAISyncNote(){
+  var note=document.getElementById('ai-sync-note');
+  if(!note) return;
+  var ts=getLastSyncedAt();
+  if(!ts){ note.textContent='No sync yet — will sync all sources before analyzing'; return; }
+  var mins=syncAgeMinutes();
+  if(mins<60) note.textContent='Data synced '+mins+'m ago — will analyze immediately';
+  else note.textContent='Last sync '+mins+'m ago — will re-sync before analyzing';
+}
+
+function clearAIResults(){
+  document.getElementById('ai-results').style.display='none';
+  chatHistory=[];
+  document.getElementById('chat-messages').innerHTML='<div class="chat-msg assistant"><div class="msg-bubble"><p style="font-size:11px;color:var(--white-faint)">Run an analysis above, then ask follow-up questions here.</p></div></div>';
+}
+
+// ── RUN ANALYSIS ──────────────────────────────────────────────────
+async function runAnalysis(){
+  if(!apiKey){ appendMsg('assistant','**API key needed** — Enter your Anthropic API key above.'); return; }
+  var btn=document.getElementById('ai-analyze-btn');
+  var lbl=document.getElementById('ai-analyze-label');
+  var note=document.getElementById('ai-sync-note');
+
+  // Smart sync: skip if synced within the last hour
+  var needsSync=syncAgeMinutes()>=60||getLastSyncedAt()===0;
+  if(needsSync && SHEETS_URL){
+    if(lbl) lbl.textContent='Syncing data...';
+    if(note) note.textContent='Syncing all sources first...';
+    if(btn){ btn.disabled=true; }
+    syncAll();
+    // Wait for longest sync (Bill.com = 22s) + small buffer
+    await new Promise(function(r){setTimeout(r,24000);});
+  }
+
+  if(lbl) lbl.textContent='Analyzing...';
+  if(btn){ btn.disabled=true; }
+
+  // Show results skeleton
+  var results=document.getElementById('ai-results');
+  if(results) results.style.display='flex';
+
+  // Reset bodies to skeleton
+  setSkeletons();
+
+  var snapshot=getFinancialSnapshot();
+  lastAnalysisSnapshot=snapshot;
+
+  // Three parallel API calls for the three analysis cards
+  try {
+    var [summaryRes, risksRes, apRes] = await Promise.all([
+      callClaude(snapshot,
+        'Write a 3-4 sentence plain-English executive summary of the current cash position for Grizzly Iron. Cover: total liquid cash, biggest upcoming outflow weeks, outstanding AR context from projects, and one key action item. Be specific with dollar amounts. No headers, just prose.'),
+      callClaude(snapshot,
+        'Identify the top 3-5 financial risks or anomalies right now. Return ONLY a JSON array, no other text, no markdown. Each item: {"level":"red|amber|green","title":"short title","detail":"1-2 sentence explanation with specific numbers"}'),
+      callClaude(snapshot,
+        'Given the current cash position and open bills, recommend which bills to pay now vs. soon vs. defer. Return ONLY a JSON array, no other text, no markdown. Up to 8 items: {"vendor":"name","amount":12345,"priority":"NOW|SOON|DEFER","reason":"brief reason"}')
+    ]);
+
+    // Render summary
+    var summaryEl=document.getElementById('ai-summary-body');
+    if(summaryEl) summaryEl.innerHTML='<p>'+summaryRes.replace(/\n/g,'</p><p>')+'</p>';
+
+    // Render risks
+    renderRisks(risksRes);
+
+    // Render AP prioritization
+    renderAPPriority(apRes);
+
+    // Seed chat history with context
+    chatHistory=[{role:'user',content:'Here is my current financial snapshot:\n\n'+snapshot+'\n\nPlease confirm you have this data and are ready to answer questions.'},{role:'assistant',content:'Got it — I have your live financial data loaded. Ask me anything about your cash position, bills, projects, or anything else.'}];
+
+  } catch(err) {
+    var summaryEl2=document.getElementById('ai-summary-body');
+    if(summaryEl2) summaryEl2.innerHTML='<p style="color:var(--red)">Analysis failed: '+err.message+'</p>';
+  }
+
+  if(btn){ btn.disabled=false; }
+  if(lbl) lbl.textContent='Analyze My Finances';
+  if(note) updateAISyncNote();
+}
+
+async function callClaude(snapshot, prompt){
+  var response=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1024,
+      system:'You are a CFO assistant for Grizzly Iron, a custom ironwork and structural steel fabrication business in Arizona. You have the following live financial data:\n\n'+snapshot,
+      messages:[{role:'user',content:prompt}]
+    })
+  });
+  var data=await response.json();
+  if(data.error) throw new Error(data.error.message||'API error');
+  return data.content[0].text;
+}
+
+function setSkeletons(){
+  var s='<div class="ai-skeleton" style="height:12px;width:100%;margin-bottom:6px;"></div><div class="ai-skeleton" style="height:12px;width:85%;margin-bottom:6px;"></div><div class="ai-skeleton" style="height:12px;width:92%;"></div>';
+  var sb=document.getElementById('ai-summary-body'); if(sb) sb.innerHTML=s;
+  var rb=document.getElementById('ai-risks-body'); if(rb) rb.innerHTML='<div class="ai-skeleton" style="height:40px;border-radius:5px;margin-bottom:6px;"></div><div class="ai-skeleton" style="height:40px;border-radius:5px;margin-bottom:6px;"></div><div class="ai-skeleton" style="height:40px;border-radius:5px;"></div>';
+  var ab=document.getElementById('ai-ap-body'); if(ab) ab.innerHTML='<div class="ai-skeleton" style="height:32px;border-radius:5px;margin-bottom:5px;"></div><div class="ai-skeleton" style="height:32px;border-radius:5px;margin-bottom:5px;"></div><div class="ai-skeleton" style="height:32px;border-radius:5px;"></div>';
+}
+
+function renderRisks(text){
+  var el=document.getElementById('ai-risks-body');
+  if(!el) return;
+  try{
+    var clean=text.replace(/```json|```/g,'').trim();
+    var items=JSON.parse(clean);
+    el.innerHTML=items.map(function(r){
+      var cls=r.level==='red'?'':'risk-item '+(r.level==='amber'?'warn':'ok');
+      return '<div class="ai-risk-item '+(r.level==='amber'?'warn':r.level==='green'?'ok':'')+'">'
+        +'<strong>'+r.title+'</strong> — '+r.detail+'</div>';
+    }).join('');
+  }catch(e){
+    el.innerHTML='<div class="ai-result-body">'+text.replace(/\n/g,'<br>')+'</div>';
   }
 }
 
-function clearChat(){
-  chatHistory=[];
-  document.getElementById('chat-messages').innerHTML='<div class="chat-msg assistant"><div class="msg-bubble"><p>Conversation cleared. What would you like to know?</p></div></div>';
+function renderAPPriority(text){
+  var el=document.getElementById('ai-ap-body');
+  if(!el) return;
+  try{
+    var clean=text.replace(/```json|```/g,'').trim();
+    var items=JSON.parse(clean);
+    el.innerHTML=items.map(function(r){
+      var cls=r.priority==='NOW'?'now':r.priority==='SOON'?'soon':'defer';
+      return '<div class="ai-ap-row">'
+        +'<div style="flex:1;min-width:0"><div style="font-weight:600;color:var(--white);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.vendor+'</div>'
+        +'<div style="font-size:10px;color:var(--white-faint);margin-top:1px">'+r.reason+'</div></div>'
+        +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;margin-left:10px">'
+        +'<div style="font-size:11px;font-family:\'DM Mono\',monospace;color:var(--white)">'+fmt(r.amount)+'</div>'
+        +'<div class="ai-ap-priority '+cls+'">'+r.priority+'</div></div>'
+        +'</div>';
+    }).join('');
+  }catch(e){
+    el.innerHTML='<div class="ai-result-body">'+text.replace(/\n/g,'<br>')+'</div>';
+  }
 }
 
+// ── Q&A CHAT ──────────────────────────────────────────────────────
 function appendMsg(role,text){
   const msgs=document.getElementById('chat-messages');
   const div=document.createElement('div');
@@ -2094,7 +2427,7 @@ async function sendMessage(){
     const response=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1024,system:buildSystemPrompt(),messages:chatHistory})
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1024,system:'You are a CFO assistant for Grizzly Iron, a custom ironwork and structural steel fabrication business in Arizona. '+(lastAnalysisSnapshot?'You have the following live financial data:\n\n'+lastAnalysisSnapshot:'Answer based on context from the conversation.'),messages:chatHistory})
     });
     const data=await response.json();
     if(data.error){removeThinking();appendMsg('assistant','**Error:** '+(data.error.message||'Check your API key and try again.'));}
@@ -3383,6 +3716,7 @@ function loadFromSheets() {
       if (data.jnConfigured)    { jnConfigured    = true; }
       if (data.billConfigured)  { billConfigured  = true; }
       if (data.asanaConfigured) { asanaConfigured = true; }
+      if (data.anthropicKey)    { apiKey = data.anthropicKey; updateKeyBar(); }
       if (data.tellerEnrollments && data.tellerEnrollments.length) {
         // UI-safe list (no tokens)
         tellerEnrollments = data.tellerEnrollments.map(function(e) {
@@ -6124,6 +6458,7 @@ if (_siWeek) {
 }
 updateBadge();
 updateScenarioHints();
+updateSyncAllBtn();
 (function initPIN() {
   var hasPIN = localStorage.getItem(PIN_KEY);
   var em = document.getElementById('pin-entry-mode');
