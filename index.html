@@ -346,51 +346,68 @@
   .sync-spin{display:inline-block;animation:spin 0.8s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
   /* AI ADVISOR DRAWER */
-  .ai-panel{position:fixed;top:0;right:-520px;width:500px;height:100vh;background:var(--navy-2);border-left:1px solid var(--border-bright);display:flex;flex-direction:column;z-index:100;transition:right 0.3s cubic-bezier(0.4,0,0.2,1);box-shadow:-8px 0 40px rgba(0,0,0,0.5);}
+  .ai-panel{position:fixed;top:0;right:-620px;width:600px;height:100vh;background:var(--navy-2);border-left:1px solid var(--border-bright);display:flex;flex-direction:column;z-index:100;transition:right 0.3s cubic-bezier(0.4,0,0.2,1);box-shadow:-8px 0 40px rgba(0,0,0,0.5);}
   .ai-panel.open{right:0;}
-  .ai-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border);background:var(--navy-3);flex-shrink:0;}
+  .ai-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--navy-3);flex-shrink:0;}
   .ai-avatar{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#6366F1,#8B5CF6);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .ai-title{font-size:13px;font-weight:700;}
   .ai-subtitle{font-size:10px;color:var(--white-faint);font-family:'DM Mono',monospace;margin-top:1px;}
-  .ai-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
-  .ai-body::-webkit-scrollbar{width:3px;} .ai-body::-webkit-scrollbar-thumb{background:var(--navy-5);}
+  /* Tab bar */
+  .ai-tabs{display:flex;background:var(--navy-3);border-bottom:1px solid var(--border);flex-shrink:0;}
+  .ai-tab{flex:1;padding:10px;font-size:12px;font-weight:600;font-family:'DM Mono',monospace;color:var(--white-faint);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all 0.15s;letter-spacing:0.03em;}
+  .ai-tab:hover{color:var(--white);}
+  .ai-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  /* Tab panels */
+  .ai-tab-panel{flex:1;overflow-y:auto;display:none;flex-direction:column;}
+  .ai-tab-panel.active{display:flex;}
+  .ai-tab-panel::-webkit-scrollbar{width:4px;} .ai-tab-panel::-webkit-scrollbar-thumb{background:var(--navy-5);border-radius:4px;}
   /* Analyze section */
-  .ai-analyze-section{padding:16px 18px;border-bottom:1px solid var(--border);flex-shrink:0;}
-  .ai-analyze-btn{width:100%;padding:11px;background:linear-gradient(135deg,#6366F1,#4F46E5);border:none;color:white;border-radius:8px;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer;transition:opacity 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .ai-analyze-section{padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0;}
+  .ai-analyze-btn{width:100%;padding:12px;background:linear-gradient(135deg,#6366F1,#4F46E5);border:none;color:white;border-radius:8px;font-size:13px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer;transition:opacity 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;}
   .ai-analyze-btn:hover{opacity:0.88;}
   .ai-analyze-btn:disabled{opacity:0.5;cursor:not-allowed;}
-  .ai-sync-note{font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-top:6px;text-align:center;}
-  /* Analysis output cards */
-  .ai-results{padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
-  .ai-result-card{background:var(--navy-3);border:1px solid var(--border);border-radius:9px;padding:14px 16px;}
-  .ai-result-card-header{display:flex;align-items:center;gap:7px;margin-bottom:10px;}
-  .ai-result-card-icon{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
-  .ai-result-card-title{font-size:11px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:0.05em;}
-  .ai-result-body{font-size:12px;color:var(--white-dim);line-height:1.6;}
+  .ai-sync-note{font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-top:7px;text-align:center;}
+  /* Collapsible result cards */
+  .ai-results{padding:12px 16px;display:flex;flex-direction:column;gap:10px;}
+  .ai-result-card{background:var(--navy-3);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .ai-result-card-header{display:flex;align-items:center;gap:8px;padding:12px 16px;cursor:pointer;user-select:none;transition:background 0.12s;}
+  .ai-result-card-header:hover{background:var(--navy-4);}
+  .ai-result-card-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+  .ai-result-card-title{font-size:11px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:0.05em;flex:1;}
+  .ai-card-chevron{font-size:10px;color:var(--white-faint);transition:transform 0.2s;flex-shrink:0;}
+  .ai-result-card.collapsed .ai-card-chevron{transform:rotate(-90deg);}
+  .ai-result-card.collapsed .ai-card-body{display:none;}
+  .ai-card-body{padding:0 16px 14px;}
+  .ai-result-body{font-size:13px;color:var(--white-dim);line-height:1.7;}
   .ai-result-body strong{color:var(--white);font-weight:600;}
-  .ai-result-body p{margin-bottom:6px;}
-  .ai-result-body p:last-child{margin-bottom:0;}
-  .ai-result-body ul{margin:4px 0 6px 14px;padding:0;}
-  .ai-result-body li{margin-bottom:3px;}
-  .ai-risk-item{background:var(--navy-4);border-left:3px solid var(--red);border-radius:0 5px 5px 0;padding:7px 10px;margin-bottom:6px;font-size:11px;color:var(--white-dim);line-height:1.4;}
+  .ai-result-body p{margin-bottom:8px;} .ai-result-body p:last-child{margin-bottom:0;}
+  /* Risk items */
+  .ai-risk-item{background:var(--navy-4);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:10px 12px;margin-bottom:8px;font-size:12px;color:var(--white-dim);line-height:1.5;}
   .ai-risk-item.warn{border-left-color:var(--amber);}
   .ai-risk-item.ok{border-left-color:#10B981;}
   .ai-risk-item:last-child{margin-bottom:0;}
-  .ai-ap-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--navy-4);border-radius:5px;margin-bottom:5px;font-size:11px;}
+  .ai-risk-item strong{color:var(--white);display:block;margin-bottom:3px;}
+  /* AP rows */
+  .ai-ap-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--navy-4);border-radius:6px;margin-bottom:6px;gap:12px;}
   .ai-ap-row:last-child{margin-bottom:0;}
-  .ai-ap-priority{font-size:9px;font-weight:700;font-family:'DM Mono',monospace;padding:2px 6px;border-radius:3px;}
+  .ai-ap-vendor{font-weight:600;color:var(--white);font-size:13px;}
+  .ai-ap-reason{font-size:11px;color:var(--white-faint);margin-top:2px;}
+  .ai-ap-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+  .ai-ap-amount{font-size:13px;font-family:'DM Mono',monospace;color:var(--white);}
+  .ai-ap-priority{font-size:10px;font-weight:700;font-family:'DM Mono',monospace;padding:2px 8px;border-radius:4px;}
   .ai-ap-priority.now{background:rgba(239,68,68,0.2);color:var(--red);}
   .ai-ap-priority.soon{background:rgba(245,158,11,0.2);color:var(--amber);}
   .ai-ap-priority.defer{background:rgba(255,255,255,0.07);color:var(--white-faint);}
+  /* Skeleton */
   .ai-skeleton{background:var(--navy-4);border-radius:4px;animation:pulse 1.2s ease-in-out infinite;}
   @keyframes pulse{0%,100%{opacity:0.4;}50%{opacity:0.8;}}
-  /* AI Chat section (bottom of drawer) */
-  .ai-chat-section{border-top:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
-  .ai-chat-label{font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);padding:8px 16px 4px;letter-spacing:0.06em;text-transform:uppercase;}
-  .ai-chat-messages{flex:1;overflow-y:auto;padding:8px 16px;max-height:220px;min-height:60px;}
-  .ai-chat-messages::-webkit-scrollbar{width:3px;} .ai-chat-messages::-webkit-scrollbar-thumb{background:var(--navy-5);}
-  .ai-chat-input-bar{display:flex;align-items:flex-end;gap:8px;padding:10px 16px;border-top:1px solid var(--border);background:var(--navy-3);flex-shrink:0;}
-  .ai-key-bar{padding:8px 16px;background:var(--navy-4);border-bottom:1px solid var(--border);flex-shrink:0;}
+  /* Chat tab */
+  .ai-chat-panel{flex:1;display:flex;flex-direction:column;min-height:0;}
+  .ai-chat-messages{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:12px;}
+  .ai-chat-messages::-webkit-scrollbar{width:4px;} .ai-chat-messages::-webkit-scrollbar-thumb{background:var(--navy-5);border-radius:4px;}
+  .ai-chat-input-bar{display:flex;align-items:flex-end;gap:10px;padding:14px 18px;border-top:1px solid var(--border);background:var(--navy-3);flex-shrink:0;}
+  /* Key bar */
+  .ai-key-bar{padding:10px 18px;background:var(--navy-4);border-bottom:1px solid var(--border);flex-shrink:0;}
   .ai-key-bar.hidden{display:none;}
   /* SHEETS MODAL */
   .url-modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:500;display:flex;align-items:center;justify-content:center;}
@@ -1126,6 +1143,7 @@
 <!-- AI ADVISOR DRAWER -->
 <div class="chat-overlay" id="ai-overlay" onclick="toggleAIPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:99;"></div>
 <div class="ai-panel" id="ai-panel">
+
   <!-- Header -->
   <div class="ai-header">
     <div style="display:flex;align-items:center;gap:10px">
@@ -1145,7 +1163,7 @@
     </div>
   </div>
 
-  <!-- API Key status bar (shown only if key not loaded) -->
+  <!-- API Key warning -->
   <div class="ai-key-bar" id="ai-key-bar">
     <div style="font-size:10px;color:var(--amber);font-family:'DM Mono',monospace;display:flex;align-items:center;gap:6px;">
       <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
@@ -1153,10 +1171,16 @@
     </div>
   </div>
 
-  <!-- Scrollable body -->
-  <div class="ai-body" id="ai-body">
+  <!-- Tab bar -->
+  <div class="ai-tabs">
+    <button class="ai-tab active" id="ai-tab-analysis" onclick="switchAITab('analysis')">📊 Analysis</button>
+    <button class="ai-tab" id="ai-tab-chat" onclick="switchAITab('chat')">💬 Chat</button>
+  </div>
 
-    <!-- Analyze section -->
+  <!-- ANALYSIS TAB -->
+  <div class="ai-tab-panel active" id="ai-panel-analysis">
+
+    <!-- Analyze button -->
     <div class="ai-analyze-section">
       <button class="ai-analyze-btn" id="ai-analyze-btn" onclick="runAnalysis()">
         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
@@ -1165,44 +1189,62 @@
       <div class="ai-sync-note" id="ai-sync-note">Syncs data if last sync was &gt;1 hour ago</div>
     </div>
 
-    <!-- Analysis results -->
+    <!-- Results cards -->
     <div class="ai-results" id="ai-results" style="display:none;">
 
       <!-- Summary card -->
-      <div class="ai-result-card">
-        <div class="ai-result-card-header">
+      <div class="ai-result-card" id="card-summary">
+        <div class="ai-result-card-header" onclick="toggleCard('card-summary')">
           <div class="ai-result-card-icon" style="background:rgba(99,102,241,0.2);">📊</div>
           <div class="ai-result-card-title" style="color:#818CF8;">FINANCIAL SUMMARY</div>
+          <span class="ai-card-chevron">▼</span>
         </div>
-        <div class="ai-result-body" id="ai-summary-body"><div class="ai-skeleton" style="height:12px;width:100%;margin-bottom:6px;"></div><div class="ai-skeleton" style="height:12px;width:85%;margin-bottom:6px;"></div><div class="ai-skeleton" style="height:12px;width:92%;"></div></div>
+        <div class="ai-card-body">
+          <div class="ai-result-body" id="ai-summary-body">
+            <div class="ai-skeleton" style="height:14px;width:100%;margin-bottom:8px;"></div>
+            <div class="ai-skeleton" style="height:14px;width:88%;margin-bottom:8px;"></div>
+            <div class="ai-skeleton" style="height:14px;width:94%;"></div>
+          </div>
+        </div>
       </div>
 
-      <!-- Risk callouts card -->
-      <div class="ai-result-card">
-        <div class="ai-result-card-header">
+      <!-- Risk card -->
+      <div class="ai-result-card" id="card-risks">
+        <div class="ai-result-card-header" onclick="toggleCard('card-risks')">
           <div class="ai-result-card-icon" style="background:rgba(239,68,68,0.15);">⚠️</div>
           <div class="ai-result-card-title" style="color:#F87171;">RISK & ANOMALY CALLOUTS</div>
+          <span class="ai-card-chevron">▼</span>
         </div>
-        <div id="ai-risks-body"><div class="ai-skeleton" style="height:40px;border-radius:5px;margin-bottom:6px;"></div><div class="ai-skeleton" style="height:40px;border-radius:5px;"></div></div>
+        <div class="ai-card-body" id="ai-risks-body">
+          <div class="ai-skeleton" style="height:52px;border-radius:6px;margin-bottom:8px;"></div>
+          <div class="ai-skeleton" style="height:52px;border-radius:6px;margin-bottom:8px;"></div>
+          <div class="ai-skeleton" style="height:52px;border-radius:6px;"></div>
+        </div>
       </div>
 
-      <!-- AP Prioritization card -->
-      <div class="ai-result-card">
-        <div class="ai-result-card-header">
+      <!-- AP card -->
+      <div class="ai-result-card" id="card-ap">
+        <div class="ai-result-card-header" onclick="toggleCard('card-ap')">
           <div class="ai-result-card-icon" style="background:rgba(245,158,11,0.15);">💳</div>
           <div class="ai-result-card-title" style="color:#FCD34D;">AP PRIORITIZATION</div>
+          <span class="ai-card-chevron">▼</span>
         </div>
-        <div id="ai-ap-body"><div class="ai-skeleton" style="height:32px;border-radius:5px;margin-bottom:5px;"></div><div class="ai-skeleton" style="height:32px;border-radius:5px;margin-bottom:5px;"></div><div class="ai-skeleton" style="height:32px;border-radius:5px;"></div></div>
+        <div class="ai-card-body" id="ai-ap-body">
+          <div class="ai-skeleton" style="height:44px;border-radius:6px;margin-bottom:6px;"></div>
+          <div class="ai-skeleton" style="height:44px;border-radius:6px;margin-bottom:6px;"></div>
+          <div class="ai-skeleton" style="height:44px;border-radius:6px;"></div>
+        </div>
       </div>
 
     </div><!-- /ai-results -->
+  </div><!-- /analysis tab -->
 
-    <!-- Q&A Chat section -->
-    <div class="ai-chat-section">
-      <div class="ai-chat-label">Ask a question</div>
+  <!-- CHAT TAB -->
+  <div class="ai-tab-panel" id="ai-panel-chat">
+    <div class="ai-chat-panel">
       <div class="ai-chat-messages" id="chat-messages">
         <div class="chat-msg assistant">
-          <div class="msg-bubble"><p style="font-size:11px;color:var(--white-faint)">Run an analysis above, then ask follow-up questions here — I'll have full context on your numbers.</p></div>
+          <div class="msg-bubble"><p>Run an analysis first, then ask follow-up questions here — I'll have your full live financial data as context.</p></div>
         </div>
       </div>
       <div class="ai-chat-input-bar">
@@ -1212,8 +1254,8 @@
         </button>
       </div>
     </div>
+  </div><!-- /chat tab -->
 
-  </div><!-- /ai-body -->
 </div><!-- /ai-panel -->
 
 <script>
@@ -2321,6 +2363,9 @@ async function runAnalysis(){
     // Seed chat history with context
     chatHistory=[{role:'user',content:'Here is my current financial snapshot:\n\n'+snapshot+'\n\nPlease confirm you have this data and are ready to answer questions.'},{role:'assistant',content:'Got it — I have your live financial data loaded. Ask me anything about your cash position, bills, projects, or anything else.'}];
 
+    // Switch to chat tab so user can ask questions immediately
+    switchAITab('chat');
+
   } catch(err) {
     console.error('[AI Advisor] Analysis error:', err);
     var errHtml='<p style="color:var(--red);font-size:11px"><strong>Error:</strong> '+err.message+'</p>';
@@ -2362,10 +2407,23 @@ async function callClaude(snapshot, prompt){
 }
 
 function setSkeletons(){
-  var s='<div class="ai-skeleton" style="height:12px;width:100%;margin-bottom:6px;"></div><div class="ai-skeleton" style="height:12px;width:85%;margin-bottom:6px;"></div><div class="ai-skeleton" style="height:12px;width:92%;"></div>';
+  var s='<div class="ai-skeleton" style="height:14px;width:100%;margin-bottom:8px;"></div><div class="ai-skeleton" style="height:14px;width:88%;margin-bottom:8px;"></div><div class="ai-skeleton" style="height:14px;width:94%;"></div>';
   var sb=document.getElementById('ai-summary-body'); if(sb) sb.innerHTML=s;
-  var rb=document.getElementById('ai-risks-body'); if(rb) rb.innerHTML='<div class="ai-skeleton" style="height:40px;border-radius:5px;margin-bottom:6px;"></div><div class="ai-skeleton" style="height:40px;border-radius:5px;margin-bottom:6px;"></div><div class="ai-skeleton" style="height:40px;border-radius:5px;"></div>';
-  var ab=document.getElementById('ai-ap-body'); if(ab) ab.innerHTML='<div class="ai-skeleton" style="height:32px;border-radius:5px;margin-bottom:5px;"></div><div class="ai-skeleton" style="height:32px;border-radius:5px;margin-bottom:5px;"></div><div class="ai-skeleton" style="height:32px;border-radius:5px;"></div>';
+  var rb=document.getElementById('ai-risks-body'); if(rb) rb.innerHTML='<div class="ai-skeleton" style="height:52px;border-radius:6px;margin-bottom:8px;"></div><div class="ai-skeleton" style="height:52px;border-radius:6px;margin-bottom:8px;"></div><div class="ai-skeleton" style="height:52px;border-radius:6px;"></div>';
+  var ab=document.getElementById('ai-ap-body'); if(ab) ab.innerHTML='<div class="ai-skeleton" style="height:44px;border-radius:6px;margin-bottom:6px;"></div><div class="ai-skeleton" style="height:44px;border-radius:6px;margin-bottom:6px;"></div><div class="ai-skeleton" style="height:44px;border-radius:6px;"></div>';
+}
+
+function switchAITab(tab){
+  document.querySelectorAll('.ai-tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.ai-tab-panel').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('ai-tab-'+tab).classList.add('active');
+  document.getElementById('ai-panel-'+tab).classList.add('active');
+  if(tab==='chat') setTimeout(function(){document.getElementById('chat-input').focus();},100);
+}
+
+function toggleCard(id){
+  var card=document.getElementById(id);
+  if(card) card.classList.toggle('collapsed');
 }
 
 function renderRisks(text){
@@ -2375,12 +2433,11 @@ function renderRisks(text){
     var clean=text.replace(/```json|```/g,'').trim();
     var items=JSON.parse(clean);
     el.innerHTML=items.map(function(r){
-      var cls=r.level==='red'?'':'risk-item '+(r.level==='amber'?'warn':'ok');
       return '<div class="ai-risk-item '+(r.level==='amber'?'warn':r.level==='green'?'ok':'')+'">'
-        +'<strong>'+r.title+'</strong> — '+r.detail+'</div>';
+        +'<strong>'+r.title+'</strong>'+r.detail+'</div>';
     }).join('');
   }catch(e){
-    el.innerHTML='<div class="ai-result-body">'+text.replace(/\n/g,'<br>')+'</div>';
+    el.innerHTML='<div class="ai-result-body" style="padding:0">'+text.replace(/\n/g,'<br>')+'</div>';
   }
 }
 
@@ -2393,15 +2450,17 @@ function renderAPPriority(text){
     el.innerHTML=items.map(function(r){
       var cls=r.priority==='NOW'?'now':r.priority==='SOON'?'soon':'defer';
       return '<div class="ai-ap-row">'
-        +'<div style="flex:1;min-width:0"><div style="font-weight:600;color:var(--white);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.vendor+'</div>'
-        +'<div style="font-size:10px;color:var(--white-faint);margin-top:1px">'+r.reason+'</div></div>'
-        +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;margin-left:10px">'
-        +'<div style="font-size:11px;font-family:\'DM Mono\',monospace;color:var(--white)">'+fmt(r.amount)+'</div>'
-        +'<div class="ai-ap-priority '+cls+'">'+r.priority+'</div></div>'
-        +'</div>';
+        +'<div style="flex:1;min-width:0">'
+        +'<div class="ai-ap-vendor">'+r.vendor+'</div>'
+        +'<div class="ai-ap-reason">'+r.reason+'</div>'
+        +'</div>'
+        +'<div class="ai-ap-right">'
+        +'<div class="ai-ap-amount">'+fmt(r.amount)+'</div>'
+        +'<div class="ai-ap-priority '+cls+'">'+r.priority+'</div>'
+        +'</div></div>';
     }).join('');
   }catch(e){
-    el.innerHTML='<div class="ai-result-body">'+text.replace(/\n/g,'<br>')+'</div>';
+    el.innerHTML='<div class="ai-result-body" style="padding:0">'+text.replace(/\n/g,'<br>')+'</div>';
   }
 }
 
