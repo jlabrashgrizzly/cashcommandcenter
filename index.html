@@ -2158,6 +2158,7 @@ function syncAll(){
 
 // ── FINANCIAL SNAPSHOT (live data) ───────────────────────────────
 function getFinancialSnapshot(){
+  try {
   var today=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   // Cash
   var dep=plaidAccounts.filter(function(a){return a.type==='depository';});
@@ -2196,14 +2197,17 @@ function getFinancialSnapshot(){
   var totalDebtSvc=liabilities.reduce(function(s,l){return s+(l.payment||0);},0);
   // Credit cards
   var ccLines=cred.map(function(a){
-    var util=a.limit>0?Math.round(a.balance/a.limit*100):0;
-    return a.name+': '+fmt(a.balance)+'/'+fmt(a.limit)+' ('+util+'%) · '+fmt(a.payment||0)+'/mo min';
+    var bal=a.balance||a.bal||0;
+    var lim=a.limit||0;
+    var util=lim>0?Math.round(bal/lim*100):0;
+    return a.name+': '+fmt(bal)+'/'+fmt(lim)+' ('+util+'%) · '+fmt(a.payment||0)+'/mo min';
   }).join('\n');
   // Asana projects
   var projLines=asanaProjects.slice(0,12).map(function(p){
-    var pct=p.percentComplete||0;
-    var remaining=p.draws?p.draws.filter(function(d){return !d.collected;}).reduce(function(s,d){return s+(d.amount||0);},0):0;
-    return (p.name||'Project')+': '+pct+'% complete · '+fmt(remaining)+' remaining';
+    var cv=p.contractValue||0;
+    var inv=p.invoiced||0;
+    var remaining=Math.max(0,cv-inv);
+    return (p.name||'Project')+': '+fmt(cv)+' contract · '+fmt(remaining)+' remaining ('+p.dept+')';
   }).join('\n');
 
   return 'LIVE FINANCIAL SNAPSHOT — Grizzly Iron (Ornamental & Structural) — '+today+'\n\n'+
@@ -2214,6 +2218,10 @@ function getFinancialSnapshot(){
     '=== DEBT & CREDIT ===\n'+(debtLines||'No debt loaded')+'\n'+(ccLines||'')+'\nTotal monthly debt service: '+fmt(totalDebtSvc)+'\n\n'+
     '=== PAYROLL ===\nBiweekly payroll: '+fmt(biweeklyPayroll)+' (avg '+fmt(Math.round(biweeklyPayroll/2))+'/wk)\n\n'+
     '=== OVERHEAD (monthly fixed costs) ===\n'+(ohData&&ohData.length?ohData.map(function(o){return (o.label||o.name||'Item')+': '+fmt(o.amount||0)+(o.dueDay?' (due day '+o.dueDay+')':'');}).join('\n'):'No overhead data loaded');
+  } catch(snapErr) {
+    console.error('[getFinancialSnapshot] Error building snapshot:', snapErr);
+    return 'FINANCIAL SNAPSHOT — Grizzly Iron — (partial data — some values still loading)\n\nError building full snapshot: '+snapErr.message;
+  }
 }
 
 function buildSystemPrompt(){
@@ -2286,6 +2294,8 @@ async function runAnalysis(){
   lastAnalysisSnapshot=snapshot;
 
   // Three parallel API calls for the three analysis cards
+  console.log('[AI Advisor] Starting analysis. apiKey length:', apiKey ? apiKey.length : 0);
+  console.log('[AI Advisor] Snapshot length:', snapshot.length, 'chars');
   try {
     var [summaryRes, risksRes, apRes] = await Promise.all([
       callClaude(snapshot,
@@ -2295,6 +2305,8 @@ async function runAnalysis(){
       callClaude(snapshot,
         'Given the current cash position and open bills, recommend which bills to pay now vs. soon vs. defer. Return ONLY a JSON array, no other text, no markdown. Up to 8 items: {"vendor":"name","amount":12345,"priority":"NOW|SOON|DEFER","reason":"brief reason"}')
     ]);
+
+    console.log('[AI Advisor] All three calls succeeded.');
 
     // Render summary
     var summaryEl=document.getElementById('ai-summary-body');
@@ -2310,8 +2322,14 @@ async function runAnalysis(){
     chatHistory=[{role:'user',content:'Here is my current financial snapshot:\n\n'+snapshot+'\n\nPlease confirm you have this data and are ready to answer questions.'},{role:'assistant',content:'Got it — I have your live financial data loaded. Ask me anything about your cash position, bills, projects, or anything else.'}];
 
   } catch(err) {
+    console.error('[AI Advisor] Analysis error:', err);
+    var errHtml='<p style="color:var(--red);font-size:11px"><strong>Error:</strong> '+err.message+'</p>';
     var summaryEl2=document.getElementById('ai-summary-body');
-    if(summaryEl2) summaryEl2.innerHTML='<p style="color:var(--red)">Analysis failed: '+err.message+'</p>';
+    if(summaryEl2) summaryEl2.innerHTML=errHtml;
+    var risksEl=document.getElementById('ai-risks-body');
+    if(risksEl) risksEl.innerHTML=errHtml;
+    var apEl=document.getElementById('ai-ap-body');
+    if(apEl) apEl.innerHTML=errHtml;
   }
 
   if(btn){ btn.disabled=false; }
@@ -2331,7 +2349,15 @@ async function callClaude(snapshot, prompt){
     })
   });
   var data=await response.json();
-  if(data.error) throw new Error(data.error.message||'API error');
+  console.log('[callClaude] HTTP status:', response.status, '| response ok:', response.ok);
+  if(!response.ok || data.error){
+    console.error('[callClaude] Error response:', JSON.stringify(data));
+    throw new Error((data.error && data.error.message) || ('HTTP '+response.status));
+  }
+  if(!data.content || !data.content[0]){
+    console.error('[callClaude] Unexpected response shape:', JSON.stringify(data));
+    throw new Error('Unexpected response from Claude API');
+  }
   return data.content[0].text;
 }
 
