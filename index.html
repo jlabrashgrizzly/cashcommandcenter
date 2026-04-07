@@ -2202,64 +2202,178 @@ function syncAll(){
 function getFinancialSnapshot(){
   try {
   var today=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-  // Cash
+
+  // ── CASH ──────────────────────────────────────────────────────────
   var dep=plaidAccounts.filter(function(a){return a.type==='depository';});
   var cred=plaidAccounts.filter(function(a){return a.type==='credit';});
-  var totalCash=dep.reduce(function(s,a){return s+a.avail;},0);
-  var cashLines=dep.map(function(a){return a.name+': '+fmt(a.avail);}).join('\n');
-  // Buffer
-  var bufferTarget=197400; // could be dynamic if exposed
-  var bufferPct=totalCash>0?Math.round(totalCash/bufferTarget*100):0;
-  // Bills
+  var totalCash=dep.reduce(function(s,a){return s+(a.avail||0);},0);
+  var cashLines=dep.length
+    ? dep.map(function(a){return '  '+a.name+': '+fmt(a.avail||0)+(a.balance&&a.balance!==a.avail?' (bal '+fmt(a.balance)+')':'');}).join('\n')
+    : '  No bank accounts loaded';
+  var bufferTarget=bufferData&&bufferData.target?bufferData.target:197400;
+  var bufferCurrent=bufferData&&bufferData.current?bufferData.current:totalCash;
+  var bufferPct=bufferTarget>0?Math.round(bufferCurrent/bufferTarget*100):0;
+
+  // ── ACCOUNTS RECEIVABLE ───────────────────────────────────────────
+  var trueAR=arInvoices.filter(function(i){return i.type!=='deposit';});
+  var depInv=arInvoices.filter(function(i){return i.type==='deposit';});
+  var arTotal=trueAR.reduce(function(s,i){return s+i.amt;},0);
+  var depTotal=depInv.reduce(function(s,i){return s+i.amt;},0);
+  var arCurrent=trueAR.filter(function(i){return i.bucket==='current';}).reduce(function(s,i){return s+i.amt;},0);
+  var ar130=trueAR.filter(function(i){return i.bucket==='1-30';}).reduce(function(s,i){return s+i.amt;},0);
+  var ar3160=trueAR.filter(function(i){return i.bucket==='31-60';}).reduce(function(s,i){return s+i.amt;},0);
+  var ar60p=trueAR.filter(function(i){return i.bucket==='60+';}).reduce(function(s,i){return s+i.amt;},0);
+  // Expected in next 30 days (uses expectedDate if set, else due date)
+  var now=new Date(); var d30=new Date(now); d30.setDate(d30.getDate()+30);
+  var exp30=trueAR.filter(function(i){
+    var ref=i.expectedDate||i.due; if(!ref) return false;
+    var d=new Date(ref); return d<=d30;
+  }).reduce(function(s,i){return s+i.amt;},0);
+  var arLines=trueAR.map(function(i){
+    var ref=i.expectedDate||i.due||'';
+    var overdue=i.bucket!=='current'?' ['+i.bucket+' OVERDUE]':'';
+    var expNote=i.expectedDate?' expected:'+i.expectedDate:'';
+    var notesSnip=i.notes?(' | '+i.notes.substring(0,60)+(i.notes.length>60?'...':'')):'';
+    return '  '+i.client+' — '+i.id+': '+fmt(i.amt)+' | due:'+i.due+expNote+overdue+notesSnip;
+  }).join('\n');
+  var depLines=depInv.length
+    ? depInv.map(function(i){return '  '+i.client+' — '+i.id+': '+fmt(i.amt)+' | due:'+i.due+(i.bucket!=='current'?' [OVERDUE]':'');}).join('\n')
+    : '  None';
+
+  // ── BILLS / PAYABLES ─────────────────────────────────────────────
   var activeBills=bills.filter(function(b){return b.status==='active';});
   var totalDue=activeBills.reduce(function(s,b){return s+b.amt;},0);
-  var pastDue=activeBills.filter(function(b){return dAgo(b.due)>0;});
+  var pastDueBills=activeBills.filter(function(b){return dAgo(b.due)>0;});
   var critical=activeBills.filter(function(b){return b.pri==='critical';});
   var delinquent=activeBills.filter(function(b){return b.pri==='delinquent';});
-  var billLines=activeBills.slice(0,15).map(function(b){
+  var billLines=activeBills.map(function(b){
     var age=dAgo(b.due)>0?' ('+dAgo(b.due)+'d OVERDUE)':' (due '+b.due+')';
-    return b.vendor+': '+fmt(b.amt)+age+(b.pri==='critical'?' [CRITICAL]':b.pri==='delinquent'?' [DELINQUENT]':'');
+    var flag=b.pri==='critical'?' [CRITICAL]':b.pri==='delinquent'?' [DELINQUENT]':'';
+    return '  '+b.vendor+': '+fmt(b.amt)+age+flag;
   }).join('\n');
-  // Outflow weeks
+
+  // ── 6-WEEK OUTFLOW ────────────────────────────────────────────────
   var wkBills=computeWkBills();
   var wkOh=computeWkOverhead();
   var wkDebt=computeWkDebtService();
   var outflowLines=WK_LBLS.map(function(lbl,i){
     var payroll=WK_PAY[i]?biweeklyPayroll:0;
     var total=wkBills[i]+wkOh[i]+wkDebt[i]+payroll;
-    return lbl+': '+fmt(total)+(WK_PAY[i]?' (payroll wk)':'');
+    var gap=BASE_INFLOW[i]-total;
+    return '  '+lbl+': out='+fmt(total)+' in='+fmt(BASE_INFLOW[i])+' net='+(gap>=0?'+':'')+fmt(gap)+(WK_PAY[i]?' [payroll wk]':'');
   }).join('\n');
   var totalOutflow=WK_LBLS.reduce(function(s,_,i){
     return s+wkBills[i]+wkOh[i]+wkDebt[i]+(WK_PAY[i]?biweeklyPayroll:0);
   },0);
-  // Debt
-  var debtLines=liabilities.map(function(l){
-    return (l.name||l.vendor||'Loan')+': '+fmt(l.balance||0)+' @ '+((l.rate||0)+'%')+' · '+fmt(l.payment||0)+'/mo';
+  var totalInflow6=BASE_INFLOW.reduce(function(s,v){return s+v;},0);
+
+  // ── 13-WEEK FORECAST ─────────────────────────────────────────────
+  var allLbls13=WK_LBLS.concat(EXT_WEEK_LBLS);
+  var allOut13=WK_LBLS.map(function(_,i){return wkBills[i]+wkOh[i]+wkDebt[i]+(WK_PAY[i]?biweeklyPayroll:0);})
+    .concat(EXT_WK_NONPAY.map(function(np,i){return np+(EXT_WK_PAY[i]?biweeklyPayroll:0);}));
+  var allIn13=BASE_INFLOW.concat(EXT_INFLOW);
+  var startCash=getLiveCash()||totalCash||187500;
+  var running13=startCash;
+  var fc13Lines=allLbls13.map(function(lbl,i){
+    var net=allIn13[i]-allOut13[i];
+    running13+=net;
+    var flag=running13<150000?' ⚠ BELOW THRESHOLD':running13<100000?' 🚨 CRITICAL':'';
+    return '  '+(i>=6?'[EST] ':'')+lbl+': in='+fmt(allIn13[i])+' out='+fmt(allOut13[i])+' net='+(net>=0?'+':'')+fmt(net)+' cash='+fmt(Math.round(running13))+flag;
   }).join('\n');
+  var totalOut13=allOut13.reduce(function(s,v){return s+v;},0);
+  var totalIn13=allIn13.reduce(function(s,v){return s+v;},0);
+  var minCash13=Math.min.apply(null,(function(){var r=startCash,arr=[];allOut13.forEach(function(o,i){r+=(allIn13[i]-o);arr.push(r);});return arr;})());
+
+  // ── OVERHEAD ─────────────────────────────────────────────────────
+  var ohMonthly=0;
+  var ohLines='  No overhead data loaded';
+  if(ohData&&ohData.overhead){
+    var ohFixed=ohData.overhead.reduce(function(s,r){return s+(parseFloat(r.amount)||0);},0);
+    var ohLabor=ohData.labor.reduce(function(s,r){return s+(parseFloat(r.pay)||0)*(1+(parseFloat(r.burden)||0)/100);},0);
+    var ohDebt=ohData.debt.reduce(function(s,r){return s+(parseFloat(r.amount)||0);},0);
+    ohMonthly=ohFixed+ohLabor+ohDebt;
+    var ohItemLines=ohData.overhead.map(function(r){return '  '+r.name+': '+fmt(r.amount||0)+(r.dueDay?' (due day '+r.dueDay+')':'');}).join('\n');
+    var laborLines=ohData.labor.map(function(r){return '  '+r.name+' (labor): '+fmt((parseFloat(r.pay)||0)*(1+(parseFloat(r.burden)||0)/100))+'/mo w/burden';}).join('\n');
+    var debtLines2=ohData.debt.map(function(r){return '  '+r.name+': '+fmt(r.amount||0)+'/mo';}).join('\n');
+    ohLines=ohItemLines+(laborLines?'\n'+laborLines:'')+(debtLines2?'\n'+debtLines2:'');
+  }
+
+  // ── DEBT & CREDIT ────────────────────────────────────────────────
+  var debtLines=liabilities.length
+    ? liabilities.map(function(l){return '  '+(l.name||l.vendor||'Loan')+': '+fmt(l.balance||0)+' @ '+((l.rate||0)+'%')+' · '+fmt(l.payment||0)+'/mo';}).join('\n')
+    : '  No debt loaded';
   var totalDebtSvc=liabilities.reduce(function(s,l){return s+(l.payment||0);},0);
-  // Credit cards
-  var ccLines=cred.map(function(a){
-    var bal=a.balance||a.bal||0;
-    var lim=a.limit||0;
-    var util=lim>0?Math.round(bal/lim*100):0;
-    return a.name+': '+fmt(bal)+'/'+fmt(lim)+' ('+util+'%) · '+fmt(a.payment||0)+'/mo min';
-  }).join('\n');
-  // Asana projects
-  var projLines=asanaProjects.slice(0,12).map(function(p){
-    var cv=p.contractValue||0;
-    var inv=p.invoiced||0;
-    var remaining=Math.max(0,cv-inv);
-    return (p.name||'Project')+': '+fmt(cv)+' contract · '+fmt(remaining)+' remaining ('+p.dept+')';
-  }).join('\n');
+  var ccLines=cred.length
+    ? cred.map(function(a){
+        var bal=a.balance||a.bal||0; var lim=a.limit||0;
+        var util=lim>0?Math.round(bal/lim*100):0;
+        return '  '+a.name+': '+fmt(bal)+' used / '+fmt(lim)+' limit ('+util+'% util) · '+fmt(a.payment||0)+'/mo min';
+      }).join('\n')
+    : '  No credit cards loaded';
+
+  // ── PROJECT BACKLOG ───────────────────────────────────────────────
+  var projLines=asanaProjects.length
+    ? asanaProjects.map(function(p){
+        var cv=p.contractValue||0; var inv=p.invoiced||0;
+        var remaining=Math.max(0,cv-inv);
+        var draws=p.draws&&p.draws.length?' | draws: '+p.draws.map(function(d){return d.name+' '+fmt(d.amount);}).join(', '):'';
+        return '  '+( p.name||'Project')+' ['+p.dept+']: '+fmt(cv)+' contract · '+fmt(inv)+' invoiced · '+fmt(remaining)+' remaining'+draws;
+      }).join('\n')
+    : '  No projects loaded';
+  var totalBacklog=asanaProjects.reduce(function(s,p){return s+Math.max(0,(p.contractValue||0)-(p.invoiced||0));},0);
 
   return 'LIVE FINANCIAL SNAPSHOT — Grizzly Iron (Ornamental & Structural) — '+today+'\n\n'+
-    '=== CASH POSITION ===\n'+(cashLines||'No bank data loaded')+'\nTotal liquid: '+fmt(totalCash)+'\nBuffer target: '+fmt(bufferTarget)+' ('+bufferPct+'% funded)\n\n'+
-    '=== 6-WEEK CASH OUTFLOW ===\n'+outflowLines+'\nTotal 6wk: '+fmt(totalOutflow)+' | Avg/wk: '+fmt(Math.round(totalOutflow/6))+'\nBiweekly payroll: '+fmt(biweeklyPayroll)+'\n\n'+
-    '=== PAYABLES (Bill.com) ===\nActive bills: '+activeBills.length+' | Total due: '+fmt(totalDue)+'\nPast due: '+pastDue.length+' | Critical: '+critical.length+' | Delinquent: '+delinquent.length+'\n'+(billLines||'No bills loaded')+'\n\n'+
-    '=== PROJECT BACKLOG (Asana) ===\n'+(projLines||'No projects loaded')+'\n\n'+
-    '=== DEBT & CREDIT ===\n'+(debtLines||'No debt loaded')+'\n'+(ccLines||'')+'\nTotal monthly debt service: '+fmt(totalDebtSvc)+'\n\n'+
-    '=== PAYROLL ===\nBiweekly payroll: '+fmt(biweeklyPayroll)+' (avg '+fmt(Math.round(biweeklyPayroll/2))+'/wk)\n\n'+
-    '=== OVERHEAD (monthly fixed costs) ===\n'+(ohData&&ohData.length?ohData.map(function(o){return (o.label||o.name||'Item')+': '+fmt(o.amount||0)+(o.dueDay?' (due day '+o.dueDay+')':'');}).join('\n'):'No overhead data loaded');
+
+    '=== CASH POSITION ===\n'+cashLines+
+    '\nTotal liquid cash: '+fmt(totalCash)+
+    '\nBuffer target: '+fmt(bufferTarget)+' | Current buffer: '+fmt(bufferCurrent)+' ('+bufferPct+'% funded)'+
+    '\n\n'+
+
+    '=== ACCOUNTS RECEIVABLE (True AR) ===\n'+
+    'Total AR: '+fmt(arTotal)+' across '+trueAR.length+' invoices\n'+
+    'Current (not yet due): '+fmt(arCurrent)+'\n'+
+    '1–30 days overdue: '+fmt(ar130)+'\n'+
+    '31–60 days overdue: '+fmt(ar3160)+'\n'+
+    '60+ days overdue: '+fmt(ar60p)+'\n'+
+    'Expected in next 30 days: '+fmt(exp30)+'\n'+
+    (arLines||'  No AR invoices loaded')+'\n\n'+
+
+    '=== DEPOSITS HELD (customer deposits — liability) ===\n'+
+    'Total deposits: '+fmt(depTotal)+' across '+depInv.length+' invoices\n'+
+    depLines+'\n\n'+
+
+    '=== PAYABLES / BILLS (Bill.com) ===\n'+
+    'Active bills: '+activeBills.length+' | Total due: '+fmt(totalDue)+'\n'+
+    'Past due: '+pastDueBills.length+' | Critical: '+critical.length+' | Delinquent: '+delinquent.length+'\n'+
+    (billLines||'  No bills loaded')+'\n\n'+
+
+    '=== 6-WEEK CASH OUTFLOW vs INFLOW ===\n'+
+    outflowLines+
+    '\n6wk total out: '+fmt(totalOutflow)+' | 6wk total in: '+fmt(totalInflow6)+' | Net: '+(totalInflow6-totalOutflow>=0?'+':'')+fmt(totalInflow6-totalOutflow)+
+    '\nBiweekly payroll: '+fmt(biweeklyPayroll)+'\n\n'+
+
+    '=== 13-WEEK FORECAST (wks 1-6 confirmed, 7-13 estimated) ===\n'+
+    'Starting cash: '+fmt(startCash)+'\n'+
+    fc13Lines+
+    '\n13wk total in: '+fmt(totalIn13)+' | 13wk total out: '+fmt(totalOut13)+' | Net: '+(totalIn13-totalOut13>=0?'+':'')+fmt(totalIn13-totalOut13)+
+    '\nLowest projected cash point: '+fmt(Math.round(minCash13))+(minCash13<150000?' ⚠ BELOW $150k SAFE FLOOR':'')+
+    '\n\n'+
+
+    '=== PROJECT BACKLOG (Asana) ===\n'+
+    'Total remaining backlog: '+fmt(totalBacklog)+' across '+asanaProjects.length+' projects\n'+
+    projLines+'\n\n'+
+
+    '=== OVERHEAD (monthly fixed costs) ===\n'+
+    'Total monthly overhead: '+fmt(ohMonthly)+' | Weekly avg: '+fmt(Math.round(ohMonthly/4.33))+'\n'+
+    ohLines+'\n\n'+
+
+    '=== DEBT SERVICE & CREDIT ===\n'+
+    debtLines+'\n'+ccLines+
+    '\nTotal monthly debt service: '+fmt(totalDebtSvc)+'\n\n'+
+
+    '=== PAYROLL ===\n'+
+    'Biweekly payroll: '+fmt(biweeklyPayroll)+' (avg '+fmt(Math.round(biweeklyPayroll/2))+'/wk)';
+
   } catch(snapErr) {
     console.error('[getFinancialSnapshot] Error building snapshot:', snapErr);
     return 'FINANCIAL SNAPSHOT — Grizzly Iron — (partial data — some values still loading)\n\nError building full snapshot: '+snapErr.message;
@@ -2512,7 +2626,7 @@ async function sendMessage(){
     const response=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1024,system:'You are a CFO assistant for Grizzly Iron, a custom ironwork and structural steel fabrication business in Arizona. '+(lastAnalysisSnapshot?'You have the following live financial data:\n\n'+lastAnalysisSnapshot:'Answer based on context from the conversation.'),messages:chatHistory})
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1024,system:'You are a sharp, practical CFO assistant for Grizzly Iron, a custom ironwork and structural steel fabrication business in Arizona (two departments: Ornamental and Structural). You have real-time access to the live financial data below. Answer questions directly with specific numbers. Be concise but complete. Flag risks clearly. When asked about purchases, factor in current cash, upcoming outflows, and which week it would hit. Use plain language — the owner is operationally focused. Format currency with $ and commas.\n\n'+(lastAnalysisSnapshot=getFinancialSnapshot()),messages:chatHistory})
     });
     const data=await response.json();
     if(data.error){removeThinking();appendMsg('assistant','**Error:** '+(data.error.message||'Check your API key and try again.'));}
