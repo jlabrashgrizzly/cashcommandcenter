@@ -337,6 +337,41 @@
   .pin-error{font-size:10px;font-family:'DM Mono',monospace;min-height:16px;margin-top:6px;}
   /* SYNC STATUS */
   #sync-status{font-size:9px;font-family:'DM Mono',monospace;transition:opacity .5s;opacity:0;white-space:nowrap;}
+
+  /* SCHEDULED PAYMENT / WORKOUT PLAN */
+  .sched-pill{display:inline-flex;align-items:center;gap:5px;background:var(--accent-glow);border:1px solid rgba(59,130,246,0.4);color:var(--accent);font-size:10px;font-family:'DM Mono',monospace;padding:3px 9px;border-radius:5px;cursor:pointer;white-space:nowrap;}
+  .sched-pill:hover{background:rgba(59,130,246,0.25);}
+  .sched-pill.unsched{background:var(--amber-dim);border-color:rgba(245,158,11,0.4);color:var(--amber);}
+  .sched-pill.workout{background:rgba(139,92,246,0.15);border-color:rgba(139,92,246,0.4);color:var(--purple);}
+  .installment-row{display:flex;align-items:center;gap:9px;background:var(--navy-4);border-left:2px solid var(--purple);padding:8px 12px;margin:4px 0 4px 32px;border-radius:0 5px 5px 0;font-size:11px;font-family:'DM Mono',monospace;}
+  .installment-row .ins-date{color:var(--white-dim);width:90px;}
+  .installment-row .ins-amount{color:var(--white);font-weight:600;flex:1;}
+  .installment-row .ins-del{background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;opacity:0.5;}
+  .installment-row .ins-del:hover{opacity:1;}
+  /* AR CONFIDENCE PILLS */
+  .conf-pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid;}
+  .conf-pill.confirmed{background:var(--green-dim);color:var(--green);border-color:rgba(16,185,129,0.4);}
+  .conf-pill.probable{background:var(--amber-dim);color:var(--amber);border-color:rgba(245,158,11,0.4);}
+  .conf-pill.hopeful{background:var(--red-dim);color:var(--red);border-color:rgba(244,63,94,0.4);}
+  /* COMMITMENTS CARD */
+  .cmt-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--navy-3);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;}
+  .cmt-row.completed{opacity:0.45;}
+  .cmt-row.missed{border-color:rgba(244,63,94,0.4);background:rgba(244,63,94,0.05);}
+  .cmt-due{font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);min-width:70px;}
+  .cmt-due.overdue{color:var(--red);}
+  .cmt-due.today{color:var(--amber);}
+  .cmt-body{flex:1;min-width:0;}
+  .cmt-counter{font-size:12px;font-weight:600;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cmt-desc{font-size:10px;color:var(--white-faint);margin-top:2px;font-family:'DM Mono',monospace;}
+  .cmt-amt{font-size:13px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent);}
+  .cmt-actions{display:flex;gap:4px;}
+  .cmt-actions button{background:var(--navy-4);border:1px solid var(--border);color:var(--white-faint);padding:4px 8px;border-radius:4px;font-size:9px;font-family:'DM Mono',monospace;cursor:pointer;white-space:nowrap;}
+  .cmt-actions button:hover{background:var(--navy-5);color:var(--white);}
+  .cmt-actions button.done{color:var(--green);border-color:rgba(16,185,129,0.3);}
+  .cmt-actions button.miss{color:var(--red);border-color:rgba(244,63,94,0.3);}
+  /* SNAPSHOT/SESSION BUTTON */
+  .header-utility-btn{display:flex;align-items:center;gap:6px;background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:7px;font-size:11px;font-weight:600;font-family:'DM Mono',monospace;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+  .header-utility-btn:hover{background:var(--navy-5);color:var(--white);}
   /* SYNC ALL BUTTON */
   .sync-all-btn{display:flex;align-items:center;gap:6px;background:var(--navy-3);border:1px solid var(--border-bright);color:var(--white-dim);padding:7px 13px;border-radius:7px;font-size:11px;font-weight:600;font-family:'DM Mono',monospace;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
   .sync-all-btn:hover{background:var(--navy-5);color:var(--white);}
@@ -555,6 +590,14 @@
       <button class="sync-all-btn" id="sync-all-btn" onclick="syncAll()" title="Sync all data sources">
         <svg id="sync-all-icon" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
         <span id="sync-all-label">Sync All</span>
+      </button>
+      <button class="header-utility-btn" onclick="exportSnapshot()" title="Download markdown snapshot for Claude Project">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        Export
+      </button>
+      <button class="header-utility-btn" onclick="openSessionSyncModal()" title="Paste back decisions from a Claude Project session">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+        Sync
       </button>
       <button class="chat-toggle-btn" onclick="toggleAIPanel()" title="AI Advisor">
         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
@@ -1328,6 +1371,12 @@ let bills = [
   {id:12, vendor:'Cintas Uniforms',              cat:'Services',         amt:680,   due:'2026-02-28', pri:'deferred',   status:'active', sc:0, snoozeUntil:null},
 ];
 
+// New state vars: commitments, AR contact log, AR confidence, bill schedules
+var commitments  = [];
+var arContactLog = [];
+var arConfidence = {};
+var billSchedules = {};
+
 let curTab = 'active';
 function dAgo(ds){return Math.round((TODAY-new Date(ds))/86400000);}
 function dUntil(ds){return Math.round((new Date(ds)-TODAY)/86400000);}
@@ -1414,13 +1463,14 @@ function renderTriage(){
     const dateEl=past?'<span class="od-badge">'+ago+'d OVERDUE</span>':'Due in '+until+'d ('+b.due+')';
     const snzEl=b.sc>0?'<span class="snz-badge">💤 '+b.sc+'×</span>':'';
     const retEl=b.status==='snoozed'&&b.snoozeUntil?'<div style="font-size:10px;color:var(--amber);font-family:\'DM Mono\',monospace;margin-top:4px">Returns: '+b.snoozeUntil+'</div>':'';
-    const actions=b.status==='snoozed'?'<button class="bbtn" onclick="unsnooze(\''+b.id+'\')">↩ Restore</button>':b.status==='paid'?'<span class="pill g">✓ PAID</span><button class="bbtn" onclick="unmarkPaid(\''+b.id+'\')" style="margin-left:4px">↩ Unmark</button>':'<button class="bbtn pay" onclick="markPaid(\''+b.id+'\')">✓ Paid</button><button class="bbtn snz" onclick="snooze(\''+b.id+'\')">💤 7d</button>';
+    var schedActionBtn = '<button class="bbtn" onclick="openBillSchedule(\''+b.id+'\')" title="Schedule payment date">📅 Schedule</button>';
+    const actions=b.status==='snoozed'?'<button class="bbtn" onclick="unsnooze(\''+b.id+'\')">↩ Restore</button>':b.status==='paid'?'<span class="pill g">✓ PAID</span><button class="bbtn" onclick="unmarkPaid(\''+b.id+'\')" style="margin-left:4px">↩ Unmark</button>':'<button class="bbtn pay" onclick="markPaid(\''+b.id+'\')">✓ Paid</button>'+schedActionBtn;
     const priEl=(b.status==='paid'||b.status==='snoozed')?'<span class="pill '+(b.pri==='critical'?'r':b.pri==='delinquent'?'a':b.pri==='standard'?'ac':'')+'" >'+b.pri.toUpperCase()+'</span>':'<select class="bps '+b.pri+'" onchange="setPri(\''+b.id+'\',this.value,this)"><option value="critical"'+(b.pri==='critical'?' selected':'')+'>🔴 CRITICAL</option><option value="delinquent"'+(b.pri==='delinquent'?' selected':'')+'>🟡 DELINQUENT</option><option value="standard"'+(b.pri==='standard'?' selected':'')+'>🔵 STANDARD</option><option value="deferred"'+(b.pri==='deferred'?' selected':'')+'>⚪ DEFER</option></select>';
     const qwBadge=curTab==='quickwins'?'<span style="font-size:9px;background:rgba(16,185,129,0.15);color:#10B981;border:1px solid rgba(16,185,129,0.3);padding:1px 6px;border-radius:3px;font-family:\'DM Mono\',monospace;margin-left:4px">QUICK WIN</span>':'';
     return '<div class="bc priority-'+b.pri+(b.status!=='active'?' '+b.status:'')+'">'
       +'<span style="color:var(--white-faint);font-size:16px;cursor:grab;flex-shrink:0">⠿</span>'
       +priEl
-      +'<div class="bi"><div class="bv">'+b.vendor+qwBadge+'</div><div class="bm"><span>'+b.cat+'</span><span>'+dateEl+'</span>'+snzEl+'</div>'+retEl+'</div>'
+      +'<div class="bi"><div class="bv">'+b.vendor+qwBadge+'</div><div class="bm"><span>'+b.cat+'</span><span>'+dateEl+'</span>'+snzEl+renderSchedPill(b)+'</div>'+retEl+renderWorkoutPlanRows(b)+'</div>'
       +'<div class="bamt '+amtCls+'">'+fmt(b.amt)+'</div>'
       +'<div class="bactions">'+actions+'</div>'
       +'</div>';
@@ -1597,6 +1647,14 @@ function renderAccounts() {
   }
 
   el.innerHTML = kpis + addBtn + banner + section('Bank Accounts', dep) + section('Credit Accounts', crd);
+
+  // Append cash diagnostic banner
+  try {
+    var diagBanner = document.createElement('div');
+    diagBanner.style.cssText = 'background:var(--navy-3);border:1px solid var(--border);border-radius:9px;padding:11px 14px;margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap';
+    diagBanner.innerHTML = '<div style="font-size:11px;color:var(--white-dim);font-family:\'DM Mono\',monospace">🔍 If the total cash balance looks wrong, run a diagnostic to see per-account data, enrollment status, and last sync time.</div><button onclick="showCashDiagnostic()" style="background:rgba(6,182,212,0.15);border:1px solid rgba(6,182,212,0.4);color:#06B6D4;padding:7px 14px;border-radius:6px;font-size:11px;font-weight:700;font-family:\'DM Mono\',monospace;cursor:pointer;white-space:nowrap">🔍 View Diagnostic</button>';
+    el.appendChild(diagBanner);
+  } catch(e) {}
 }
 
 function openAcctEdit(id, defaultType) {
@@ -2703,12 +2761,81 @@ function billWeekIndex(dueDateStr) {
 }
 
 function computeWkBills() {
-  // Returns [wk0amt, wk1amt, ..., wk5amt] from active imported bills
+  // Returns [wk0amt, wk1amt, ..., wk5amt] from scheduled cash outflows ONLY.
+  // Past-due bills with no scheduled date are EXCLUDED — see getUnscheduledTotal().
   var result = [0,0,0,0,0,0];
   bills.filter(function(b){ return b.status === 'active'; })
     .forEach(function(b) {
-      var wi = billWeekIndex(b.due);
-      if (wi >= 0) result[wi] += b.amt;
+      getBillCashOutflows(b).forEach(function(o) {
+        var d = new Date(o.date);
+        for (var i = 0; i < 6; i++) {
+          if (d >= new Date(WK_STARTS[i]) && d <= new Date(WK_ENDS[i])) {
+            result[i] += o.amount;
+            return;
+          }
+        }
+      });
+    });
+  return result;
+}
+
+// Returns array of {date, amount} representing actual cash outflow dates for a bill.
+// - Workout plan installments take priority
+// - Else single scheduled date with full amount
+// - Else empty array (unscheduled)
+function getBillCashOutflows(bill) {
+  if (!bill || bill.status !== 'active') return [];
+  if (bill.workoutPlan && bill.workoutPlan.length) {
+    return bill.workoutPlan.filter(function(p){ return p.date && p.amount > 0; })
+      .map(function(p){ return { date: p.date, amount: Number(p.amount) }; });
+  }
+  if (bill.scheduledDate) {
+    return [{ date: bill.scheduledDate, amount: bill.amt }];
+  }
+  return [];
+}
+
+function getUnscheduledBills() {
+  return bills.filter(function(b){
+    if (b.status !== 'active') return false;
+    return getBillCashOutflows(b).length === 0;
+  });
+}
+
+function getUnscheduledTotal() {
+  return getUnscheduledBills().reduce(function(s,b){ return s + (b.amt||0); }, 0);
+}
+
+function getUnscheduledPastDue() {
+  return getUnscheduledBills().filter(function(b){ return dAgo(b.due) > 0; });
+}
+
+function getUnscheduledPastDueTotal() {
+  return getUnscheduledPastDue().reduce(function(s,b){ return s + (b.amt||0); }, 0);
+}
+
+// 13-week bills bucketing — extends computeWkBills to weeks 7-13
+function computeBillsAllWeeks(numWeeks) {
+  numWeeks = numWeeks || 13;
+  var result = new Array(numWeeks);
+  for (var z = 0; z < numWeeks; z++) result[z] = 0;
+  // Build week boundaries
+  var starts = [], ends = [];
+  var weekStart = new Date(TODAY);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  for (var w = 0; w < numWeeks; w++) {
+    var ws = new Date(weekStart); ws.setDate(ws.getDate() + w*7);
+    var we = new Date(ws); we.setDate(we.getDate() + 6);
+    starts.push(ws); ends.push(we);
+  }
+  bills.filter(function(b){ return b.status === 'active'; })
+    .forEach(function(b) {
+      getBillCashOutflows(b).forEach(function(o) {
+        var d = new Date(o.date);
+        for (var i = 0; i < numWeeks; i++) {
+          if (d >= starts[i] && d <= ends[i]) { result[i] += o.amount; return; }
+        }
+      });
     });
   return result;
 }
@@ -3313,6 +3440,11 @@ function renderAR() {
         <div><div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">CONTACT</div><div style="font-size:11px;margin-top:2px">${inv.contact}</div></div>
         <div><div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint)">ACTION</div><div style="font-size:10px;font-weight:700;font-family:'DM Mono',monospace;color:${col};margin-top:2px">${action}</div></div>
       </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <span class="conf-pill ${getArConfidence(inv.id)}" onclick="cycleArConfidence('${inv.id}')" title="Click to cycle confidence · weights: confirmed 100%, probable 60%, hopeful 40%">${getArConfidence(inv.id).toUpperCase()}</span>
+        <button onclick="openArContactModal('${inv.id}')" style="background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white-dim);padding:4px 10px;border-radius:5px;font-size:10px;font-family:'DM Mono',monospace;cursor:pointer">📞 Log contact</button>
+        ${(function(){ var last = getLastArContact(inv.id); return last ? '<span style="font-size:10px;font-family:\'DM Mono\',monospace;color:var(--white-faint)">Last: '+last.contact_date+' '+last.method+' &middot; "'+last.result.substring(0,60)+(last.result.length>60?'…':'')+'"</span>' : '<span style="font-size:10px;font-family:\'DM Mono\',monospace;color:var(--white-faint);opacity:0.6">No contact logged yet</span>'; })()}
+      </div>
       <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-dim);background:var(--navy-4);border-radius:5px;padding:6px 10px">&#128221; ${inv.notes}</div>
     </div>`;
   }
@@ -3706,7 +3838,44 @@ function renderDashboard() {
         + '<div class="card mb12"><div class="sec">6-Week Cash Outflow ❖ = payroll</div>'+cashBars+'</div>'
         + '<div class="card"><div class="sec">Key Ratios</div><div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">'+ratioRows+'</div></div>'
       + '</div>'
+    + '</div>'
+    // ── COMMITMENTS + UNSCHEDULED AP (new) ─────────────────────
+    + '<div class="g2" style="align-items:start;gap:14px;margin-top:14px">'
+      + '<div class="card">'
+        + '<div class="sec" style="display:flex;justify-content:space-between;align-items:center">'
+          + '<span>Active Commitments<span style="font-size:9px;font-family:\'DM Mono\',monospace;color:var(--white-faint);font-weight:400;margin-left:8px">Promises &amp; follow-ups you\'re tracking</span></span>'
+          + '<button onclick="openCommitmentModal()" style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.4);color:var(--accent);padding:5px 11px;border-radius:5px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer">+ Add</button>'
+        + '</div>'
+        + '<div id="cmt-card-content"></div>'
+      + '</div>'
+      + '<div class="card">'
+        + (function(){
+            var unschedTotal = getUnscheduledPastDueTotal();
+            var unschedCount = getUnscheduledPastDue().length;
+            var dailyBurn = weeklyBurn / 7;
+            var daysOfBurn = dailyBurn > 0 ? Math.round(unschedTotal / dailyBurn) : 0;
+            var warnBlock = '';
+            if (unschedTotal > 0 && daysOfBurn > 14) {
+              warnBlock = '<div style="background:var(--amber-dim);border:1px solid rgba(245,158,11,0.4);border-radius:6px;padding:9px 12px;margin-bottom:10px;font-size:11px;color:var(--amber);font-family:\'DM Mono\',monospace">⚠ '+unschedCount+' bills totaling '+fmt(unschedTotal)+' have no scheduled payment date — equivalent to '+daysOfBurn+' days of cash burn. Schedule them or they\'ll keep being invisible to the forecast.</div>';
+            }
+            var topUnsched = getUnscheduledPastDue().sort(function(a,b){return b.amt-a.amt;}).slice(0, 8);
+            var rows = topUnsched.map(function(b) {
+              return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--navy-3);border:1px solid var(--border);border-radius:5px;margin-bottom:5px;font-size:11px">'
+                + '<div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b style="color:var(--white)">'+b.vendor+'</b> <span style="font-family:\'DM Mono\',monospace;color:var(--white-faint);font-size:10px">'+dAgo(b.due)+'d overdue</span></div>'
+                + '<div style="font-family:\'DM Mono\',monospace;font-weight:700;color:var(--amber);margin-right:8px">'+fmt(b.amt)+'</div>'
+                + '<button onclick="openBillSchedule(\''+b.id+'\')" style="background:var(--accent-glow);border:1px solid rgba(59,130,246,0.4);color:var(--accent);padding:3px 9px;border-radius:4px;font-size:10px;font-family:\'DM Mono\',monospace;cursor:pointer">📅 Schedule</button>'
+                + '</div>';
+            }).join('');
+            var moreNote = unschedCount > 8 ? '<div style="font-size:10px;font-family:\'DM Mono\',monospace;color:var(--white-faint);text-align:center;margin-top:6px">+ '+(unschedCount-8)+' more — see Payables Triage</div>' : '';
+            var emptyMsg = '<div style="font-size:11px;color:var(--white-faint);padding:14px 4px;text-align:center;font-family:\'DM Mono\',monospace">✓ All past-due bills have a payment date scheduled.</div>';
+            return '<div class="sec">⚠ Unscheduled Past-Due<span style="font-size:11px;font-family:\'DM Mono\',monospace;color:var(--amber);font-weight:700;margin-left:10px">'+fmt(unschedTotal)+'</span><span style="font-size:9px;font-family:\'DM Mono\',monospace;color:var(--white-faint);font-weight:400;margin-left:8px">'+unschedCount+' bills with no payment date</span></div>'
+              + warnBlock
+              + (topUnsched.length ? rows + moreNote : emptyMsg);
+          })()
+      + '</div>'
     + '</div>';
+  // Render the commitments card content after the DOM is updated
+  try { renderCommitmentsCard(); } catch(e) {}
 }
 
 
@@ -3995,6 +4164,20 @@ function loadFromSheets() {
           }
         });
       }
+      // Hydrate scheduledDate + workoutPlan onto bills from bill_schedules sheet
+      var schedMap = data.billSchedules || {};
+      billSchedules = schedMap;
+      bills.forEach(function(b) {
+        var s = schedMap[b.id];
+        if (s) {
+          b.scheduledDate = s.scheduled_date || null;
+          b.workoutPlan   = s.workout_plan   || null;
+        }
+      });
+      // Load commitments, AR contact log, AR confidence
+      commitments  = data.commitments  || [];
+      arContactLog = data.arContactLog || [];
+      arConfidence = data.arConfidence || {};
       maybeAutoSnapshot();
       renderDashboard(); renderOutflow(); renderRevenue(); renderAR(); renderBacklog(); renderDebt(); renderBuffer(); renderTriage();
       showSyncStatus('Loaded from Sheets', 'var(--green)');
@@ -4805,6 +4988,723 @@ function buildAsanaInflowsForDept(dept) {
 function updateARBadge() {
   var el = document.getElementById('ar-badge');
   if (el) el.textContent = arInvoices.length;
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+// BILL SCHEDULING + UNSCHEDULED HELPERS
+// ══════════════════════════════════════════════════════════════════
+
+// Renders the schedule pill that appears on each triage row
+function renderSchedPill(b) {
+  if (b.status !== 'active') return '';
+  var outflows = getBillCashOutflows(b);
+  if (b.workoutPlan && b.workoutPlan.length) {
+    return ' <span class="sched-pill workout" onclick="openBillSchedule(\''+b.id+'\')">🗓 Workout plan · '+b.workoutPlan.length+' installments</span>';
+  }
+  if (b.scheduledDate) {
+    return ' <span class="sched-pill" onclick="openBillSchedule(\''+b.id+'\')">📅 Pay '+b.scheduledDate+'</span>';
+  }
+  if (dAgo(b.due) > 0) {
+    return ' <span class="sched-pill unsched" onclick="openBillSchedule(\''+b.id+'\')">⚠ Unscheduled</span>';
+  }
+  return '';
+}
+
+// Renders workout plan installments as indented sub-rows
+function renderWorkoutPlanRows(b) {
+  if (!b.workoutPlan || !b.workoutPlan.length) return '';
+  return '<div style="margin-top:6px">' + b.workoutPlan.map(function(p, idx) {
+    return '<div class="installment-row">'
+      + '<span class="ins-date">📅 '+p.date+'</span>'
+      + '<span class="ins-amount">'+fmt(p.amount)+'</span>'
+      + '<button class="ins-del" onclick="removeInstallment(\''+b.id+'\','+idx+')" title="Remove installment">✕</button>'
+      + '</div>';
+  }).join('') + '</div>';
+}
+
+// Persists a single bill's schedule to Apps Script (fire and forget)
+function saveBillSchedule(billId) {
+  if (!SHEETS_URL) return;
+  var b = bills.find(function(x){ return x.id === billId; });
+  if (!b) return;
+  fetch(SHEETS_URL, {
+    method: 'POST',
+    body: JSON.stringify({
+      type: 'bill_schedule_set',
+      bill_id: billId,
+      scheduled_date: b.scheduledDate || '',
+      workout_plan: b.workoutPlan || null
+    })
+  }).then(function(){ showSyncStatus('Schedule saved', 'var(--green)'); })
+    .catch(function(){ showSyncStatus('Save failed', 'var(--amber)'); });
+}
+
+// Modal: open bill schedule editor
+function openBillSchedule(billId) {
+  var b = bills.find(function(x){ return x.id === billId; });
+  if (!b) return;
+  document.getElementById('bsch-bill-id').value = billId;
+  document.getElementById('bsch-title').textContent = b.vendor + ' — ' + fmt(b.amt);
+  document.getElementById('bsch-meta').textContent = (b.cat || 'Bill') + ' · Due ' + b.due + (dAgo(b.due) > 0 ? ' ('+dAgo(b.due)+'d overdue)' : '');
+  document.getElementById('bsch-scheduled').value = b.scheduledDate || '';
+  // Render existing workout plan
+  renderWorkoutPlanEditor(b);
+  document.getElementById('bsch-modal').style.display = 'flex';
+}
+
+function closeBillSchedule() {
+  document.getElementById('bsch-modal').style.display = 'none';
+}
+
+function renderWorkoutPlanEditor(b) {
+  var container = document.getElementById('bsch-workout-list');
+  if (!container) return;
+  var plan = (b.workoutPlan || []).slice();
+  var total = plan.reduce(function(s,p){ return s + (Number(p.amount)||0); }, 0);
+  var remaining = (b.amt || 0) - total;
+  var billId = b.id;
+  if (!plan.length) {
+    container.innerHTML = '<div style="font-size:10px;color:var(--white-faint);font-family:\'DM Mono\',monospace;padding:8px 0">No installments yet — leave blank to use a single scheduled date above.</div>';
+  } else {
+    container.innerHTML = plan.map(function(p, idx) {
+      return '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">'
+        + '<input type="date" value="'+(p.date||'')+'" onchange="updateInstallment(\''+billId+'\','+idx+',\'date\',this.value)" style="background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:6px 9px;border-radius:5px;font-size:11px;font-family:\'DM Mono\',monospace;flex:1;outline:none"/>'
+        + '<input type="number" value="'+(p.amount||0)+'" placeholder="Amount" onchange="updateInstallment(\''+billId+'\','+idx+',\'amount\',this.value)" style="background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:6px 9px;border-radius:5px;font-size:11px;font-family:\'DM Mono\',monospace;width:110px;outline:none"/>'
+        + '<button onclick="removeInstallment(\''+billId+'\','+idx+',true)" style="background:var(--red-dim);border:1px solid rgba(244,63,94,0.3);color:var(--red);padding:5px 9px;border-radius:5px;font-size:11px;cursor:pointer">✕</button>'
+        + '</div>';
+    }).join('');
+  }
+  document.getElementById('bsch-totals').innerHTML =
+    'Bill amount: <b style="color:var(--white)">'+fmt(b.amt)+'</b> · Installments total: <b style="color:'+(Math.abs(remaining)<0.01?'var(--green)':remaining<0?'var(--red)':'var(--amber)')+'">'+fmt(total)+'</b> · Remaining: <b style="color:'+(Math.abs(remaining)<0.01?'var(--green)':'var(--amber)')+'">'+fmt(remaining)+'</b>';
+}
+
+function addInstallment() {
+  var billId = document.getElementById('bsch-bill-id').value;
+  var b = bills.find(function(x){ return x.id === billId; });
+  if (!b) return;
+  if (!b.workoutPlan) b.workoutPlan = [];
+  var remaining = b.amt - b.workoutPlan.reduce(function(s,p){ return s + (Number(p.amount)||0); }, 0);
+  var defaultDate = b.workoutPlan.length ? '' : (b.scheduledDate || '');
+  b.workoutPlan.push({ date: defaultDate, amount: Math.max(0, remaining) });
+  renderWorkoutPlanEditor(b);
+}
+
+function updateInstallment(billId, idx, field, val) {
+  var b = bills.find(function(x){ return x.id === billId; });
+  if (!b || !b.workoutPlan || !b.workoutPlan[idx]) return;
+  if (field === 'amount') b.workoutPlan[idx].amount = parseFloat(val) || 0;
+  else b.workoutPlan[idx][field] = val;
+  renderWorkoutPlanEditor(b);
+}
+
+function removeInstallment(billId, idx, fromModal) {
+  var b = bills.find(function(x){ return x.id === billId; });
+  if (!b || !b.workoutPlan) return;
+  b.workoutPlan.splice(idx, 1);
+  if (!b.workoutPlan.length) b.workoutPlan = null;
+  if (fromModal) {
+    renderWorkoutPlanEditor(b);
+  } else {
+    saveBillSchedule(billId);
+    renderTriage();
+    refreshAllForecasts();
+  }
+}
+
+function saveBillScheduleFromModal() {
+  var billId = document.getElementById('bsch-bill-id').value;
+  var b = bills.find(function(x){ return x.id === billId; });
+  if (!b) return;
+  var schedVal = document.getElementById('bsch-scheduled').value;
+  b.scheduledDate = schedVal || null;
+  // Clean up workout plan: remove empty entries
+  if (b.workoutPlan) {
+    b.workoutPlan = b.workoutPlan.filter(function(p){ return p.date && (Number(p.amount)||0) > 0; });
+    if (!b.workoutPlan.length) b.workoutPlan = null;
+  }
+  saveBillSchedule(billId);
+  closeBillSchedule();
+  renderTriage();
+  refreshAllForecasts();
+}
+
+function clearBillSchedule() {
+  var billId = document.getElementById('bsch-bill-id').value;
+  var b = bills.find(function(x){ return x.id === billId; });
+  if (!b) return;
+  if (!confirm('Clear scheduled date and any installments for '+b.vendor+'?')) return;
+  b.scheduledDate = null;
+  b.workoutPlan = null;
+  saveBillSchedule(billId);
+  closeBillSchedule();
+  renderTriage();
+  refreshAllForecasts();
+}
+
+// Re-render all views that depend on bill cash outflows
+function refreshAllForecasts() {
+  try { renderDashboard(); } catch(e){}
+  try { renderOutflow();   } catch(e){}
+  try { renderRevenue();   } catch(e){}
+  try { render13Week();    } catch(e){}
+  try { renderPaydown();   } catch(e){}
+}
+
+// ══════════════════════════════════════════════════════════════════
+// COMMITMENTS CRUD (frontend)
+// ══════════════════════════════════════════════════════════════════
+
+function saveCommitment(cmt) {
+  if (!SHEETS_URL) return Promise.resolve();
+  var isUpdate = cmt.id && commitments.some(function(c){ return c.id === cmt.id; });
+  return fetch(SHEETS_URL, {
+    method: 'POST',
+    body: JSON.stringify({
+      type: isUpdate ? 'commitment_update' : 'commitment_add',
+      id: cmt.id || null,
+      type_value: cmt.type,
+      counterparty: cmt.counterparty,
+      description: cmt.description,
+      amount: cmt.amount,
+      due_date: cmt.due_date,
+      status: cmt.status,
+      notes: cmt.notes
+    })
+  }).then(function(r){ return r.json(); })
+    .catch(function(){ return { ok: false }; });
+}
+
+function deleteCommitmentFn(id) {
+  var cmt = commitments.find(function(c){ return c.id === id; });
+  if (!cmt) return;
+  if (!confirm('Delete commitment: ' + cmt.counterparty + ' — ' + cmt.description + '?')) return;
+  commitments = commitments.filter(function(c){ return c.id !== id; });
+  renderCommitmentsCard();
+  if (SHEETS_URL) {
+    fetch(SHEETS_URL, { method: 'POST', body: JSON.stringify({ type: 'commitment_delete', id: id }) }).catch(function(){});
+  }
+}
+
+function markCommitmentStatus(id, status) {
+  var cmt = commitments.find(function(c){ return c.id === id; });
+  if (!cmt) return;
+  cmt.status = status;
+  renderCommitmentsCard();
+  if (SHEETS_URL) {
+    fetch(SHEETS_URL, { method: 'POST', body: JSON.stringify({ type: 'commitment_update', id: id, status: status }) }).catch(function(){});
+  }
+}
+
+function openCommitmentModal(id) {
+  var cmt = id ? commitments.find(function(c){ return c.id === id; }) : null;
+  document.getElementById('cmt-edit-id').value = id || '';
+  document.getElementById('cmt-edit-title').textContent = cmt ? 'Edit Commitment' : 'New Commitment';
+  document.getElementById('cmt-edit-type').value         = cmt ? cmt.type         : 'follow_up';
+  document.getElementById('cmt-edit-counterparty').value = cmt ? cmt.counterparty : '';
+  document.getElementById('cmt-edit-description').value  = cmt ? cmt.description  : '';
+  document.getElementById('cmt-edit-amount').value       = (cmt && cmt.amount != null) ? cmt.amount : '';
+  document.getElementById('cmt-edit-due-date').value     = cmt ? cmt.due_date     : '';
+  document.getElementById('cmt-edit-status').value       = cmt ? cmt.status       : 'pending';
+  document.getElementById('cmt-edit-notes').value        = cmt ? cmt.notes        : '';
+  document.getElementById('cmt-edit-modal').style.display = 'flex';
+}
+
+function closeCommitmentModal() {
+  document.getElementById('cmt-edit-modal').style.display = 'none';
+}
+
+function saveCommitmentFromModal() {
+  var id = document.getElementById('cmt-edit-id').value || null;
+  var cmt = {
+    id: id,
+    type:         document.getElementById('cmt-edit-type').value,
+    counterparty: document.getElementById('cmt-edit-counterparty').value.trim(),
+    description:  document.getElementById('cmt-edit-description').value.trim(),
+    amount:       parseFloat(document.getElementById('cmt-edit-amount').value) || null,
+    due_date:     document.getElementById('cmt-edit-due-date').value,
+    status:       document.getElementById('cmt-edit-status').value,
+    notes:        document.getElementById('cmt-edit-notes').value.trim()
+  };
+  if (!cmt.counterparty) { alert('Counterparty required'); return; }
+  if (!cmt.due_date)     { alert('Due date required'); return; }
+  if (id) {
+    var existing = commitments.find(function(c){ return c.id === id; });
+    if (existing) Object.assign(existing, cmt);
+  } else {
+    cmt.id = 'cmt_local_' + Date.now();
+    cmt.created_date = new Date().toISOString().split('T')[0];
+    commitments.push(cmt);
+  }
+  closeCommitmentModal();
+  renderCommitmentsCard();
+  saveCommitment(cmt).then(function(res){
+    if (res && res.id && !id) {
+      // Replace local id with server-issued id
+      var local = commitments.find(function(c){ return c.id === cmt.id; });
+      if (local) local.id = res.id;
+      renderCommitmentsCard();
+    }
+  });
+}
+
+function renderCommitmentsCard() {
+  var el = document.getElementById('cmt-card-content');
+  if (!el) return;
+  var active = commitments.filter(function(c){ return c.status === 'pending'; })
+    .sort(function(a,b){ return (a.due_date||'9999').localeCompare(b.due_date||'9999'); });
+  if (!active.length) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--white-faint);padding:14px 4px;text-align:center;font-family:\'DM Mono\',monospace">No pending commitments. Click "+ Add" to track one.</div>';
+    return;
+  }
+  el.innerHTML = active.map(function(c) {
+    var dAgoVal = c.due_date ? Math.round((TODAY - new Date(c.due_date))/86400000) : 0;
+    var dueCls = dAgoVal > 0 ? 'overdue' : dAgoVal === 0 ? 'today' : '';
+    var dueStr = c.due_date ? (dAgoVal > 0 ? dAgoVal+'d ago' : dAgoVal === 0 ? 'Today' : 'In '+Math.abs(dAgoVal)+'d') : '—';
+    var typeLabel = c.type === 'payment_out' ? '💸' : c.type === 'ar_chase' ? '📞' : c.type === 'decision' ? '🤔' : '📌';
+    return '<div class="cmt-row '+c.status+'">'
+      + '<div class="cmt-due '+dueCls+'">'+dueStr+'<br><span style="opacity:0.6">'+(c.due_date||'')+'</span></div>'
+      + '<div class="cmt-body">'
+        + '<div class="cmt-counter">'+typeLabel+' '+c.counterparty+'</div>'
+        + '<div class="cmt-desc">'+(c.description||'')+'</div>'
+      + '</div>'
+      + (c.amount != null ? '<div class="cmt-amt">'+fmt(c.amount)+'</div>' : '')
+      + '<div class="cmt-actions">'
+        + '<button class="done" onclick="markCommitmentStatus(\''+c.id+'\',\'completed\')" title="Mark done">✓</button>'
+        + '<button class="miss" onclick="markCommitmentStatus(\''+c.id+'\',\'missed\')" title="Mark missed">✕</button>'
+        + '<button onclick="openCommitmentModal(\''+c.id+'\')" title="Edit">✎</button>'
+        + '<button onclick="deleteCommitmentFn(\''+c.id+'\')" title="Delete" style="color:var(--red)">🗑</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// AR CONFIDENCE + CONTACT LOG (frontend)
+// ══════════════════════════════════════════════════════════════════
+
+var AR_CONFIDENCE_WEIGHTS = { confirmed: 1.0, probable: 0.6, hopeful: 0.4 };
+
+function getArConfidence(invoiceId) {
+  return (arConfidence[invoiceId] && arConfidence[invoiceId].confidence) || 'confirmed';
+}
+
+function getArWeight(invoiceId) {
+  return AR_CONFIDENCE_WEIGHTS[getArConfidence(invoiceId)] || 1.0;
+}
+
+function cycleArConfidence(invoiceId) {
+  var order = ['confirmed', 'probable', 'hopeful'];
+  var current = getArConfidence(invoiceId);
+  var next = order[(order.indexOf(current) + 1) % order.length];
+  arConfidence[invoiceId] = { confidence: next, confidence_note: (arConfidence[invoiceId] && arConfidence[invoiceId].confidence_note) || '', last_updated: new Date().toISOString().split('T')[0] };
+  if (SHEETS_URL) {
+    fetch(SHEETS_URL, { method: 'POST', body: JSON.stringify({ type: 'ar_confidence_set', invoice_id: invoiceId, confidence: next }) }).catch(function(){});
+  }
+  renderAR();
+  render13Week();
+}
+
+function getLastArContact(invoiceId) {
+  var entries = arContactLog.filter(function(e){ return e.invoice_id === invoiceId; })
+    .sort(function(a,b){ return (b.contact_date||'').localeCompare(a.contact_date||''); });
+  return entries[0] || null;
+}
+
+function openArContactModal(invoiceId) {
+  document.getElementById('arcl-invoice-id').value = invoiceId;
+  document.getElementById('arcl-invoice-label').textContent = invoiceId;
+  document.getElementById('arcl-contact-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('arcl-method').value = 'call';
+  document.getElementById('arcl-result').value = '';
+  document.getElementById('arcl-next-action').value = '';
+  document.getElementById('arcl-next-action-date').value = '';
+  document.getElementById('arcl-modal').style.display = 'flex';
+}
+
+function closeArContactModal() {
+  document.getElementById('arcl-modal').style.display = 'none';
+}
+
+function saveArContact() {
+  var entry = {
+    id: 'con_local_' + Date.now(),
+    invoice_id:       document.getElementById('arcl-invoice-id').value,
+    contact_date:     document.getElementById('arcl-contact-date').value,
+    method:           document.getElementById('arcl-method').value,
+    result:           document.getElementById('arcl-result').value.trim(),
+    next_action:      document.getElementById('arcl-next-action').value.trim(),
+    next_action_date: document.getElementById('arcl-next-action-date').value,
+    created_at:       new Date().toISOString().split('T')[0]
+  };
+  if (!entry.result) { alert('Result/notes required'); return; }
+  arContactLog.push(entry);
+  closeArContactModal();
+  renderAR();
+  if (SHEETS_URL) {
+    fetch(SHEETS_URL, { method: 'POST', body: JSON.stringify(Object.assign({ type: 'ar_contact_add' }, entry)) })
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if (res && res.id) {
+          var local = arContactLog.find(function(e){ return e.id === entry.id; });
+          if (local) local.id = res.id;
+        }
+      })
+      .catch(function(){});
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SNAPSHOT EXPORT — markdown file
+// ══════════════════════════════════════════════════════════════════
+
+function exportSnapshot() {
+  var md = buildSnapshotMarkdown();
+  var ts = new Date().toISOString().split('T')[0];
+  var blob = new Blob([md], { type: 'text/markdown' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'ccc-snapshot-' + ts + '.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showSyncStatus('Snapshot downloaded', 'var(--green)');
+}
+
+function buildSnapshotMarkdown() {
+  var now = new Date();
+  var lines = [];
+  lines.push('# Cash Command Center — Snapshot');
+  lines.push('');
+  lines.push('**Generated:** ' + now.toLocaleString('en-US') + '  ');
+  lines.push('**Business:** Grizzly Iron — Ornamental & Structural');
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+
+  // CASH POSITION
+  var totalCash = getLiveCash();
+  lines.push('## Cash Position');
+  lines.push('');
+  var dep = plaidAccounts.filter(function(a){ return a.type === 'depository'; });
+  if (dep.length === 0) {
+    lines.push('- **No bank accounts loaded** — Teller may be disconnected or balances stale.');
+  } else {
+    dep.forEach(function(a) {
+      lines.push('- ' + a.name + ' ('+a.inst+', ····'+a.mask+'): **'+fmt(a.avail || a.bal)+'**');
+    });
+  }
+  lines.push('');
+  lines.push('**Total liquid cash: '+fmt(totalCash)+'**');
+  lines.push('');
+  var burn = getWkNonPay().reduce(function(s,v){return s+v;},0)/6 + (biweeklyPayroll/2);
+  var runway = burn > 0 ? Math.round((totalCash / burn) * 7) : 0;
+  lines.push('Estimated runway at current burn: **' + runway + ' days**');
+  lines.push('');
+
+  // ONE-LINE SUMMARY
+  var unsched = getUnscheduledPastDueTotal();
+  var unschedCount = getUnscheduledPastDue().length;
+  var summary = totalCash < 50000 ? 'Tight cash position' : totalCash < 150000 ? 'Below buffer target' : 'Healthy cash on hand';
+  if (unsched > 0) summary += ' · ' + fmt(unsched) + ' in unscheduled past-due AP across ' + unschedCount + ' bills';
+  lines.push('> **'+summary+'**');
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+
+  // INCOMING — next 14 days
+  lines.push('## Incoming (next 14 days)');
+  lines.push('');
+  var n14 = new Date(TODAY); n14.setDate(n14.getDate() + 14);
+  var n7  = new Date(TODAY); n7.setDate(n7.getDate() + 7);
+  var trueAR = arInvoices.filter(function(i){ return i.type !== 'deposit'; });
+  var incomingWk1 = [], incomingWk2 = [];
+  trueAR.forEach(function(inv) {
+    var ref = inv.expectedDate || inv.due;
+    if (!ref) return;
+    var d = new Date(ref);
+    if (d <= n7) incomingWk1.push(inv);
+    else if (d <= n14) incomingWk2.push(inv);
+  });
+  function lineAR(inv) {
+    var conf = getArConfidence(inv.id);
+    var weight = getArWeight(inv.id);
+    var weighted = inv.amt * weight;
+    var src = (arContactLog.filter(function(e){ return e.invoice_id === inv.id; }).sort(function(a,b){return (b.contact_date||'').localeCompare(a.contact_date||'');})[0] || {});
+    var note = src.result ? ' · "' + src.result + '"' : '';
+    return '- '+inv.client+' (#'+inv.id+'): **'+fmt(inv.amt)+'** · '+(inv.expectedDate||inv.due)+' · _'+conf+'_'+(weight<1?' (weighted '+fmt(weighted)+')':'')+note;
+  }
+  lines.push('### This week');
+  if (incomingWk1.length === 0) lines.push('_(nothing confirmed)_');
+  else incomingWk1.forEach(function(inv){ lines.push(lineAR(inv)); });
+  lines.push('');
+  lines.push('### Next week');
+  if (incomingWk2.length === 0) lines.push('_(nothing confirmed)_');
+  else incomingWk2.forEach(function(inv){ lines.push(lineAR(inv)); });
+  lines.push('');
+  var w1Total = incomingWk1.reduce(function(s,i){return s+i.amt;},0);
+  var w1Weighted = incomingWk1.reduce(function(s,i){return s+i.amt*getArWeight(i.id);},0);
+  var w2Total = incomingWk2.reduce(function(s,i){return s+i.amt;},0);
+  var w2Weighted = incomingWk2.reduce(function(s,i){return s+i.amt*getArWeight(i.id);},0);
+  lines.push('**Wk1 total: '+fmt(w1Total)+' (confidence-weighted: '+fmt(w1Weighted)+')**');
+  lines.push('**Wk2 total: '+fmt(w2Total)+' (confidence-weighted: '+fmt(w2Weighted)+')**');
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+
+  // OUTGOING — next 14 days, scheduled only
+  lines.push('## Outgoing (next 14 days · scheduled cash only)');
+  lines.push('');
+  var outWk1 = [], outWk2 = [];
+  bills.filter(function(b){ return b.status === 'active'; }).forEach(function(b) {
+    getBillCashOutflows(b).forEach(function(o) {
+      var d = new Date(o.date);
+      if (d > n14) return;
+      var entry = { vendor: b.vendor, amount: o.amount, date: o.date, cat: b.cat, billId: b.id };
+      if (d <= n7) outWk1.push(entry);
+      else outWk2.push(entry);
+    });
+  });
+  function lineBill(e) { return '- '+e.date+' · '+e.vendor+' ('+e.cat+'): **'+fmt(e.amount)+'**'; }
+  lines.push('### This week');
+  if (outWk1.length === 0) lines.push('_(no scheduled payments)_');
+  else outWk1.sort(function(a,b){return a.date.localeCompare(b.date);}).forEach(function(e){lines.push(lineBill(e));});
+  lines.push('');
+  lines.push('### Next week');
+  if (outWk2.length === 0) lines.push('_(no scheduled payments)_');
+  else outWk2.sort(function(a,b){return a.date.localeCompare(b.date);}).forEach(function(e){lines.push(lineBill(e));});
+  lines.push('');
+  var outW1Tot = outWk1.reduce(function(s,e){return s+e.amount;},0);
+  var outW2Tot = outWk2.reduce(function(s,e){return s+e.amount;},0);
+  lines.push('**Wk1 scheduled outflow: '+fmt(outW1Tot)+'**');
+  lines.push('**Wk2 scheduled outflow: '+fmt(outW2Tot)+'**');
+  lines.push('');
+
+  // RECURRING — payroll, overhead
+  lines.push('### Recurring obligations (this period)');
+  lines.push('- Biweekly payroll: **'+fmt(biweeklyPayroll)+'** (every other week)');
+  var ohMonthly = ohData ? (ohData.overhead.reduce(function(s,r){return s+(parseFloat(r.amount)||0);},0)
+                          + ohData.labor.reduce(function(s,r){return s+(parseFloat(r.pay)||0)*(1+(parseFloat(r.burden)||0)/100);},0)
+                          + ohData.debt.reduce(function(s,r){return s+(parseFloat(r.amount)||0);},0)) : 0;
+  lines.push('- Monthly overhead (rent + labor + debt service): **'+fmt(ohMonthly)+'**');
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+
+  // UNSCHEDULED PAST-DUE
+  lines.push('## ⚠ Unscheduled past-due AP');
+  lines.push('');
+  var unschedBills = getUnscheduledPastDue();
+  if (unschedBills.length === 0) {
+    lines.push('_(none — all past-due bills have scheduled payment dates)_');
+  } else {
+    lines.push('**Total: '+fmt(unschedBills.reduce(function(s,b){return s+b.amt;},0))+' across '+unschedBills.length+' bills**');
+    lines.push('');
+    unschedBills.sort(function(a,b){return b.amt - a.amt;}).forEach(function(b) {
+      lines.push('- '+b.vendor+' ('+b.cat+'): **'+fmt(b.amt)+'** · '+dAgo(b.due)+'d overdue (due '+b.due+')');
+    });
+  }
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+
+  // GAP ANALYSIS
+  lines.push('## Gap analysis');
+  lines.push('');
+  lines.push('| | This week | Next week |');
+  lines.push('|---|---|---|');
+  lines.push('| Confirmed in | '+fmt(w1Weighted)+' | '+fmt(w2Weighted)+' |');
+  lines.push('| Scheduled out | '+fmt(outW1Tot)+' | '+fmt(outW2Tot)+' |');
+  lines.push('| **Net (weighted)** | **'+fmt(w1Weighted-outW1Tot)+'** | **'+fmt(w2Weighted-outW2Tot)+'** |');
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+
+  // ACTIVE COMMITMENTS
+  lines.push('## Active commitments');
+  lines.push('');
+  var pending = commitments.filter(function(c){ return c.status === 'pending'; })
+    .sort(function(a,b){ return (a.due_date||'9999').localeCompare(b.due_date||'9999'); });
+  if (pending.length === 0) {
+    lines.push('_(none tracked)_');
+  } else {
+    pending.forEach(function(c) {
+      var amtStr = c.amount != null ? ' — '+fmt(c.amount) : '';
+      lines.push('- **'+c.counterparty+'** ('+c.type+'): '+c.description+amtStr+' · due **'+c.due_date+'**'+(c.notes?' · '+c.notes:''));
+    });
+  }
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+
+  // AR DETAIL — top items by age/amount
+  lines.push('## AR detail — top open invoices');
+  lines.push('');
+  var topAR = trueAR.filter(function(i){ return i.bucket !== 'current'; })
+    .sort(function(a,b){ return b.amt - a.amt; })
+    .slice(0, 15);
+  if (topAR.length === 0) {
+    lines.push('_(no past-due invoices)_');
+  } else {
+    lines.push('| Customer | Inv # | Amount | Age | Confidence | Last contact |');
+    lines.push('|---|---|---|---|---|---|');
+    topAR.forEach(function(inv) {
+      var last = getLastArContact(inv.id);
+      var contactStr = last ? last.contact_date+' '+last.method+' ('+last.result.substring(0,40)+(last.result.length>40?'…':'')+')' : '_never_';
+      lines.push('| '+inv.client+' | '+inv.id+' | '+fmt(inv.amt)+' | '+inv.bucket+' | '+getArConfidence(inv.id)+' | '+contactStr+' |');
+    });
+  }
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+
+  // VENDOR PRESSURE
+  lines.push('## Vendor pressure / holds');
+  lines.push('');
+  var pressureBills = bills.filter(function(b){ return b.status === 'active' && (b.holdingMaterial || b.pri === 'critical' || b.pri === 'delinquent'); });
+  if (pressureBills.length === 0) {
+    lines.push('_(none flagged)_');
+  } else {
+    pressureBills.sort(function(a,b){return b.amt-a.amt;}).slice(0,10).forEach(function(b) {
+      lines.push('- '+b.vendor+': **'+fmt(b.amt)+'** · '+(b.pri||'?').toUpperCase()+(b.holdingMaterial?' · 📦 HOLDING MATERIAL':'')+(b.scheduledDate?' · scheduled '+b.scheduledDate:' · UNSCHEDULED'));
+    });
+  }
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+
+  // FOOTER
+  lines.push('## Notes for the Claude Project conversation');
+  lines.push('');
+  lines.push('When making decisions or commitments in this session, ask Claude to format them as a JSON array for paste-back to the dashboard. Example structure:');
+  lines.push('');
+  lines.push('```json');
+  lines.push('[');
+  lines.push('  {"type": "commitment", "counterparty": "Vendor Name", "description": "...", "amount": 5000, "due_date": "2026-06-15", "notes": "..."},');
+  lines.push('  {"type": "ar_contact", "invoice_id": "INV-1234", "contact_date": "2026-06-02", "method": "call", "result": "...", "next_action_date": "2026-06-09"},');
+  lines.push('  {"type": "ar_confidence", "invoice_id": "INV-1234", "confidence": "probable", "confidence_note": "..."},');
+  lines.push('  {"type": "bill_schedule", "bill_id": "BILL-ID", "scheduled_date": "2026-06-15"}');
+  lines.push(']');
+  lines.push('```');
+  lines.push('');
+  lines.push('Paste that JSON back into the dashboard via the "Sync from session" button.');
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SESSION SYNC MODAL — paste-back from Claude Project
+// ══════════════════════════════════════════════════════════════════
+
+function openSessionSyncModal() {
+  document.getElementById('sess-input').value = '';
+  document.getElementById('sess-result').innerHTML = '';
+  document.getElementById('sess-modal').style.display = 'flex';
+}
+
+function closeSessionSyncModal() {
+  document.getElementById('sess-modal').style.display = 'none';
+}
+
+function submitSessionSync() {
+  var raw = document.getElementById('sess-input').value.trim();
+  var resultEl = document.getElementById('sess-result');
+  if (!raw) { resultEl.innerHTML = '<div style="color:var(--amber);font-size:11px">Paste JSON first.</div>'; return; }
+  if (!SHEETS_URL) { resultEl.innerHTML = '<div style="color:var(--red);font-size:11px">No Sheets URL configured.</div>'; return; }
+  var entries;
+  try {
+    entries = JSON.parse(raw);
+    if (!Array.isArray(entries)) entries = [entries];
+  } catch(e) {
+    resultEl.innerHTML = '<div style="color:var(--red);font-size:11px">Invalid JSON: '+e.message+'</div>';
+    return;
+  }
+  resultEl.innerHTML = '<div style="color:var(--accent);font-size:11px">Syncing '+entries.length+' entries...</div>';
+  fetch(SHEETS_URL, {
+    method: 'POST',
+    body: JSON.stringify({ type: 'session_sync', entries: entries })
+  }).then(function(r){ return r.json(); })
+    .then(function(res) {
+      if (!res.ok) {
+        resultEl.innerHTML = '<div style="color:var(--red);font-size:11px">Error: '+(res.error||'unknown')+'</div>';
+        return;
+      }
+      var c = res.counts || {};
+      var html = '<div style="color:var(--green);font-size:11px;font-family:\'DM Mono\',monospace;line-height:1.7">'
+        + '<b>✓ Sync complete</b><br>'
+        + 'Commitments added: '+(c.commitments_added||0)+'<br>'
+        + 'Commitments updated: '+(c.commitments_updated||0)+'<br>'
+        + 'AR contacts logged: '+(c.ar_contacts_added||0)+'<br>'
+        + 'AR confidence set: '+(c.ar_confidence_set||0)+'<br>'
+        + 'Bill schedules set: '+(c.bill_schedules_set||0)+'<br>'
+        + 'Skipped: '+(c.skipped||0)
+        + '</div>';
+      if (res.errors && res.errors.length) {
+        html += '<div style="margin-top:10px;color:var(--amber);font-size:10px;font-family:\'DM Mono\',monospace">Errors:<br>' + res.errors.map(function(e){ return 'Entry #'+e.index+': '+e.error; }).join('<br>') + '</div>';
+      }
+      html += '<div style="margin-top:14px;text-align:center"><button onclick="loadFromSheets();closeSessionSyncModal()" style="background:linear-gradient(135deg,#10B981,#059669);border:none;color:white;padding:9px 20px;border-radius:6px;font-size:11px;font-weight:700;font-family:\'DM Mono\',monospace;cursor:pointer">↻ Reload Dashboard</button></div>';
+      resultEl.innerHTML = html;
+    })
+    .catch(function(err) {
+      resultEl.innerHTML = '<div style="color:var(--red);font-size:11px">Network error: '+err.message+'</div>';
+    });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CASH BALANCE DIAGNOSTIC
+// ══════════════════════════════════════════════════════════════════
+
+function runCashDiagnostic() {
+  var lines = [];
+  lines.push('=== CASH BALANCE DIAGNOSTIC ===');
+  lines.push('Time: ' + new Date().toLocaleString());
+  lines.push('');
+  lines.push('Total plaidAccounts in memory: ' + plaidAccounts.length);
+  lines.push('  Depository: ' + plaidAccounts.filter(function(a){return a.type==='depository';}).length);
+  lines.push('  Credit: ' + plaidAccounts.filter(function(a){return a.type==='credit';}).length);
+  lines.push('');
+  lines.push('--- Per-account detail ---');
+  plaidAccounts.forEach(function(a) {
+    lines.push((a.tellerId ? '[TELLER] ' : '[MANUAL] ') + a.name + ' (' + a.inst + ', ····' + a.mask + ')');
+    lines.push('  type=' + a.type + ' sub=' + a.sub);
+    lines.push('  bal=' + (a.bal||0) + '  avail=' + (a.avail||0) + (a.limit?'  limit='+a.limit:''));
+  });
+  lines.push('');
+  lines.push('--- Teller enrollments ---');
+  lines.push('Connected: ' + tellerEnrollments.length);
+  tellerEnrollments.forEach(function(e) {
+    lines.push('  ' + e.institution + ' (' + e.enrollmentId + ')');
+  });
+  lines.push('Disconnected: ' + tellerDisconnected.length);
+  tellerDisconnected.forEach(function(e) {
+    lines.push('  ⚠ ' + e.institution + ' (' + e.enrollmentId + ') — NEEDS RECONNECT');
+  });
+  lines.push('');
+  lines.push('--- Filter status ---');
+  lines.push('Allowed IDs in picker: ' + (tellerAllowedIds ? tellerAllowedIds.size : 'null (first-run)'));
+  lines.push('Total raw from Teller: ' + tellerAllAccounts.length);
+  lines.push('Last sync: ' + (tellerLastSync || '(never)'));
+  lines.push('');
+  lines.push('--- getLiveCash() result ---');
+  lines.push('Returns: ' + fmt(getLiveCash()));
+  lines.push('');
+  lines.push('=== END DIAGNOSTIC ===');
+  console.log(lines.join('\n'));
+  return lines.join('\n');
+}
+
+function showCashDiagnostic() {
+  var result = runCashDiagnostic();
+  var pre = document.getElementById('cash-diag-output');
+  if (pre) pre.textContent = result;
+  document.getElementById('cash-diag-modal').style.display = 'flex';
+}
+
+function closeCashDiagnostic() {
+  document.getElementById('cash-diag-modal').style.display = 'none';
 }
 
 function saveBillsState() {
@@ -6984,6 +7884,182 @@ updateSyncAllBtn();
       <div style="display:flex;justify-content:flex-end;gap:8px">
         <button onclick="document.getElementById('teller-picker-modal').style.display='none'" style="background:var(--navy-5);border:1px solid var(--border);color:var(--white-dim);padding:10px 16px;border-radius:7px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer">Cancel</button>
         <button onclick="saveTellerPicker()" style="background:var(--accent);border:none;color:#fff;padding:10px 20px;border-radius:7px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;font-weight:600">Save Selection</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- BILL SCHEDULE MODAL -->
+  <div class="url-modal" id="bsch-modal" style="display:none">
+    <div class="url-modal-card" style="width:560px;max-width:95vw">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div>
+          <div style="font-size:15px;font-weight:700" id="bsch-title">Schedule Payment</div>
+          <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-top:2px" id="bsch-meta"></div>
+        </div>
+        <button onclick="closeBillSchedule()" style="background:none;border:none;color:var(--white-faint);font-size:18px;cursor:pointer">&times;</button>
+      </div>
+      <input type="hidden" id="bsch-bill-id"/>
+      <div style="margin:14px 0">
+        <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-bottom:5px;letter-spacing:.05em">SCHEDULED PAYMENT DATE</div>
+        <input type="date" id="bsch-scheduled" style="width:100%;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:9px 12px;border-radius:6px;font-size:13px;font-family:'DM Mono',monospace;outline:none;box-sizing:border-box"/>
+        <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-top:5px">Use the single date above for one-shot payment, OR build a workout plan with installments below (installments override the single date).</div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--purple);font-family:'DM Mono',monospace">⚡ WORKOUT PLAN INSTALLMENTS</div>
+          <button onclick="addInstallment()" style="background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.4);color:var(--purple);padding:5px 11px;border-radius:5px;font-size:10px;font-family:'DM Mono',monospace;cursor:pointer">+ Add installment</button>
+        </div>
+        <div id="bsch-workout-list" style="margin-bottom:8px"></div>
+        <div id="bsch-totals" style="font-size:11px;font-family:'DM Mono',monospace;color:var(--white-faint);background:var(--navy-4);padding:8px 12px;border-radius:5px"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button onclick="saveBillScheduleFromModal()" style="flex:1;background:linear-gradient(135deg,#3B82F6,#2563EB);border:none;color:white;padding:10px;border-radius:7px;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer">Save Schedule</button>
+        <button onclick="clearBillSchedule()" style="background:var(--red-dim);border:1px solid rgba(244,63,94,0.3);color:var(--red);padding:10px 16px;border-radius:7px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer">Clear</button>
+        <button onclick="closeBillSchedule()" style="background:var(--navy-5);border:1px solid var(--border);color:var(--white-dim);padding:10px 16px;border-radius:7px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMITMENT EDIT MODAL -->
+  <div class="url-modal" id="cmt-edit-modal" style="display:none">
+    <div class="url-modal-card" style="width:520px;max-width:95vw">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div style="font-size:15px;font-weight:700" id="cmt-edit-title">New Commitment</div>
+        <button onclick="closeCommitmentModal()" style="background:none;border:none;color:var(--white-faint);font-size:18px;cursor:pointer">&times;</button>
+      </div>
+      <input type="hidden" id="cmt-edit-id"/>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-bottom:4px">TYPE</div>
+          <select id="cmt-edit-type" style="width:100%;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:8px 10px;border-radius:6px;font-size:12px;box-sizing:border-box;outline:none">
+            <option value="follow_up">📌 Follow-up</option>
+            <option value="ar_chase">📞 AR chase</option>
+            <option value="payment_out">💸 Payment promise</option>
+            <option value="decision">🤔 Decision / research</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-bottom:4px">STATUS</div>
+          <select id="cmt-edit-status" style="width:100%;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:8px 10px;border-radius:6px;font-size:12px;box-sizing:border-box;outline:none">
+            <option value="pending">Pending</option>
+            <option value="completed">Completed</option>
+            <option value="missed">Missed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div style="grid-column:span 2">
+          <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-bottom:4px">COUNTERPARTY *</div>
+          <input id="cmt-edit-counterparty" type="text" placeholder="Who is this with? (vendor, customer, etc.)" style="width:100%;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:8px 10px;border-radius:6px;font-size:12px;box-sizing:border-box;outline:none"/>
+        </div>
+        <div style="grid-column:span 2">
+          <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-bottom:4px">DESCRIPTION</div>
+          <input id="cmt-edit-description" type="text" placeholder="What did you commit to?" style="width:100%;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:8px 10px;border-radius:6px;font-size:12px;box-sizing:border-box;outline:none"/>
+        </div>
+        <div>
+          <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-bottom:4px">AMOUNT (optional)</div>
+          <input id="cmt-edit-amount" type="number" placeholder="$" style="width:100%;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:8px 10px;border-radius:6px;font-size:12px;box-sizing:border-box;outline:none"/>
+        </div>
+        <div>
+          <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-bottom:4px">DUE DATE *</div>
+          <input id="cmt-edit-due-date" type="date" style="width:100%;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:8px 10px;border-radius:6px;font-size:12px;box-sizing:border-box;outline:none"/>
+        </div>
+        <div style="grid-column:span 2">
+          <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-bottom:4px">NOTES</div>
+          <textarea id="cmt-edit-notes" rows="3" placeholder="Context, next steps..." style="width:100%;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:8px 10px;border-radius:6px;font-size:12px;box-sizing:border-box;outline:none;resize:vertical;font-family:'Syne',sans-serif"></textarea>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button onclick="saveCommitmentFromModal()" style="flex:1;background:linear-gradient(135deg,#3B82F6,#2563EB);border:none;color:white;padding:10px;border-radius:7px;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer">Save</button>
+        <button onclick="closeCommitmentModal()" style="background:var(--navy-5);border:1px solid var(--border);color:var(--white-dim);padding:10px 16px;border-radius:7px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AR CONTACT LOG MODAL -->
+  <div class="url-modal" id="arcl-modal" style="display:none">
+    <div class="url-modal-card" style="width:520px;max-width:95vw">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div>
+          <div style="font-size:15px;font-weight:700">Log AR Contact</div>
+          <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-top:2px">Invoice: <span id="arcl-invoice-label"></span></div>
+        </div>
+        <button onclick="closeArContactModal()" style="background:none;border:none;color:var(--white-faint);font-size:18px;cursor:pointer">&times;</button>
+      </div>
+      <input type="hidden" id="arcl-invoice-id"/>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-bottom:4px">CONTACT DATE</div>
+          <input id="arcl-contact-date" type="date" style="width:100%;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:8px 10px;border-radius:6px;font-size:12px;box-sizing:border-box;outline:none"/>
+        </div>
+        <div>
+          <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-bottom:4px">METHOD</div>
+          <select id="arcl-method" style="width:100%;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:8px 10px;border-radius:6px;font-size:12px;box-sizing:border-box;outline:none">
+            <option value="call">📞 Call</option>
+            <option value="email">📧 Email</option>
+            <option value="text">💬 Text</option>
+            <option value="in_person">🤝 In person</option>
+            <option value="voicemail">📩 Voicemail</option>
+          </select>
+        </div>
+        <div style="grid-column:span 2">
+          <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-bottom:4px">RESULT / NOTES *</div>
+          <textarea id="arcl-result" rows="3" placeholder="What did they say? Promise to pay? Dispute? etc." style="width:100%;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:8px 10px;border-radius:6px;font-size:12px;box-sizing:border-box;outline:none;resize:vertical;font-family:'Syne',sans-serif"></textarea>
+        </div>
+        <div>
+          <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-bottom:4px">NEXT ACTION</div>
+          <input id="arcl-next-action" type="text" placeholder="Follow up if no payment..." style="width:100%;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:8px 10px;border-radius:6px;font-size:12px;box-sizing:border-box;outline:none"/>
+        </div>
+        <div>
+          <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-bottom:4px">NEXT ACTION DATE</div>
+          <input id="arcl-next-action-date" type="date" style="width:100%;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:8px 10px;border-radius:6px;font-size:12px;box-sizing:border-box;outline:none"/>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button onclick="saveArContact()" style="flex:1;background:linear-gradient(135deg,#10B981,#059669);border:none;color:white;padding:10px;border-radius:7px;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer">Log Contact</button>
+        <button onclick="closeArContactModal()" style="background:var(--navy-5);border:1px solid var(--border);color:var(--white-dim);padding:10px 16px;border-radius:7px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SESSION SYNC MODAL -->
+  <div class="url-modal" id="sess-modal" style="display:none">
+    <div class="url-modal-card" style="width:620px;max-width:95vw">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:15px;font-weight:700">Sync from Claude Project session</div>
+        <button onclick="closeSessionSyncModal()" style="background:none;border:none;color:var(--white-faint);font-size:18px;cursor:pointer">&times;</button>
+      </div>
+      <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-bottom:12px">Paste the JSON array Claude generated. Supported types: <code>commitment</code>, <code>commitment_update</code>, <code>commitment_delete</code>, <code>ar_contact</code>, <code>ar_confidence</code>, <code>bill_schedule</code>.</div>
+      <textarea id="sess-input" rows="12" placeholder='[\n  {"type": "commitment", "counterparty": "Delta Steel", "description": "Payment plan proposal", "amount": 25000, "due_date": "2026-06-15", "notes": "Teresa agreed to written plan"},\n  {"type": "ar_contact", "invoice_id": "INV-2401", "contact_date": "2026-06-02", "method": "call", "result": "Promised pay Friday"},\n  {"type": "ar_confidence", "invoice_id": "INV-2401", "confidence": "probable"},\n  {"type": "bill_schedule", "bill_id": "BILL-1234", "scheduled_date": "2026-06-15"}\n]' style="width:100%;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white);padding:10px;border-radius:6px;font-size:11px;font-family:'DM Mono',monospace;outline:none;box-sizing:border-box;resize:vertical"></textarea>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="submitSessionSync()" style="flex:1;background:linear-gradient(135deg,#10B981,#059669);border:none;color:white;padding:10px;border-radius:7px;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer">▶ Apply Sync</button>
+        <button onclick="closeSessionSyncModal()" style="background:var(--navy-5);border:1px solid var(--border);color:var(--white-dim);padding:10px 16px;border-radius:7px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer">Cancel</button>
+      </div>
+      <div id="sess-result" style="margin-top:14px;min-height:40px"></div>
+    </div>
+  </div>
+
+  <!-- CASH DIAGNOSTIC MODAL -->
+  <div class="url-modal" id="cash-diag-modal" style="display:none">
+    <div class="url-modal-card" style="width:680px;max-width:95vw">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:15px;font-weight:700">Cash Balance Diagnostic</div>
+        <button onclick="closeCashDiagnostic()" style="background:none;border:none;color:var(--white-faint);font-size:18px;cursor:pointer">&times;</button>
+      </div>
+      <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--white-faint);margin-bottom:10px">If the total cash on hand looks wrong, check this output for: (a) disconnected enrollments requiring reconnect, (b) accounts filtered out by the picker, (c) stale balances from a failed sync.</div>
+      <pre id="cash-diag-output" style="background:var(--navy);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:10px;font-family:'DM Mono',monospace;color:var(--white-dim);max-height:400px;overflow-y:auto;white-space:pre-wrap;word-break:break-all"></pre>
+      <div style="margin-top:12px;font-size:10px;font-family:'DM Mono',monospace;color:var(--amber);background:var(--amber-dim);border:1px solid rgba(245,158,11,0.3);border-radius:6px;padding:9px 12px">
+        ⚠ Common causes of low/wrong cash balance:<br>
+        • Teller enrollment disconnected — look for ⚠ entries above and reconnect<br>
+        • Account picker excluding business accounts — open the picker and check selections<br>
+        • Last sync failed — try Sync All and watch for errors<br>
+        • Cert renewal needed (Teller mTLS) — check Netlify function logs
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button onclick="tellerRefresh()" style="flex:1;background:rgba(6,182,212,0.15);border:1px solid rgba(6,182,212,0.4);color:#06B6D4;padding:9px 16px;border-radius:6px;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer">↻ Refresh Teller now</button>
+        <button onclick="openTellerPicker()" style="flex:1;background:var(--navy-5);border:1px solid var(--border-bright);color:var(--white-dim);padding:9px 16px;border-radius:6px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer">⚙ Open account picker</button>
+        <button onclick="closeCashDiagnostic()" style="background:var(--navy-5);border:1px solid var(--border);color:var(--white-dim);padding:9px 16px;border-radius:6px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer">Close</button>
       </div>
     </div>
   </div>
